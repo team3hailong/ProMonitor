@@ -1,0 +1,200 @@
+/* Main application styles */
+.root {
+    -fx-font-family: "System";
+    -fx-font-size: 13px;
+    -fx-background-color: #f5f5f7;
+}
+
+/* Main container */
+.main-container {
+    -fx-background-color: white;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, 0);
+}
+
+/* Top bar */
+.top-bar {
+    -fx-background-color: #3a3a3c;
+    -fx-alignment: center-left;
+}
+
+.app-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.user-info {
+    -fx-font-size: 14px;
+    -fx-text-fill: #e0e0e0;
+}
+
+.timer-label {
+    -fx-font-size: 18px;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 0 10 0 10;
+}
+
+/* Action buttons */
+.action-button {
+    -fx-font-size: 14px;
+    -fx-padding: 5 15 5 15;
+    -fx-background-color: #0070c9;
+    -fx-text-fill: white;
+    -fx-background-radius: 4px;
+}
+
+.action-button:hover {
+    -fx-background-color: #0051a8;
+}
+
+.start-button {
+    -fx-background-color: #34c759;
+}
+
+.start-button:hover {
+    -fx-background-color: #248a3d;
+}
+
+.stop-button {
+    -fx-background-color: #ff3b30;
+}
+
+.stop-button:hover {
+    -fx-background-color: #d70015;
+}
+
+/* Status bar */
+.status-bar {
+    -fx-background-color: #f0f0f0;
+    -fx-border-color: #d0d0d0;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* Tab styling */
+.tab-pane {
+    -fx-tab-min-width: 100px;
+}
+
+.tab {
+    -fx-background-color: #f0f0f0;
+    -fx-padding: 4 10 4 10;
+}
+
+.tab:selected {
+    -fx-background-color: white;
+}
+
+.tab .tab-label {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+/* Dashboard styles */
+.dashboard-view .info-box {
+    -fx-background-color: #f8f8f8;
+    -fx-border-color: #e0e0e0;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+    -fx-min-width: 180px;
+    -fx-min-height: 80px;
+}
+
+.dashboard-view .info-title {
+    -fx-font-size: 14px;
+    -fx-text-fill: #666;
+}
+
+.dashboard-view .info-value {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0070c9;
+}
+
+.dashboard-view .section-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-padding: 5 0 5 0;
+}
+
+/* TableView styling */
+.table-view {
+    -fx-background-color: transparent;
+}
+
+.table-view .column-header {
+    -fx-background-color: #f0f0f0;
+    -fx-font-weight: bold;
+}
+
+.table-view .table-row-cell:odd {
+    -fx-background-color: #f9f9f9;
+}
+
+.table-view .table-row-cell:selected {
+    -fx-background-color: #b3d9ff;
+}
+
+/* View titles */
+.view-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 0 10 0;
+}
+
+/* Section headers */
+.section-header {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+/* Group view */
+.group-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0070c9;
+}
+
+/* Settings view */
+.settings-view .setting-label {
+    -fx-font-weight: bold;
+}
+
+.settings-view .setting-value {
+    -fx-text-fill: #444;
+}
+
+.settings-view .description-text {
+    -fx-font-style: italic;
+    -fx-text-fill: #666;
+    -fx-padding: 5 0 0 20;
+}
+
+/* Chart styling */
+.chart {
+    -fx-padding: 10;
+}
+
+.chart-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.chart-pie-label {
+    -fx-fill: #333;
+}
+
+.chart-pie-label-line {
+    -fx-stroke: #999;
+    -fx-stroke-width: 1px;
+}
+
+.chart-legend {
+    -fx-background-color: transparent;
+}
+
+/* Accordion styling */
+.titled-pane > .title {
+    -fx-font-weight: bold;
+    -fx-background-color: #e6e6e6;
+}
