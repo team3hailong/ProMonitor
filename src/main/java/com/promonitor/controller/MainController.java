@@ -110,32 +110,29 @@ public class MainController {
         return newGroup;
     }
 
-    public boolean deleteGroup(ApplicationGroup group) {
+    public void deleteGroup(ApplicationGroup group) {
         boolean removed = groupList.remove(group);
         if (removed) {
             limitManager.removeLimit(group);
             saveData();
             logger.info("Đã xóa nhóm: {}", group.getName());
         }
-        return removed;
     }
 
-    public boolean addToGroup(ApplicationGroup group, Application app) {
+    public void addToGroup(ApplicationGroup group, Application app) {
         boolean added = group.addApplication(app);
         if (added) {
             saveData();
             logger.info("Đã thêm ứng dụng {} vào nhóm {}", app.getName(), group.getName());
         }
-        return added;
     }
 
-    public boolean removeFromGroup(ApplicationGroup group, Application app) {
+    public void removeFromGroup(ApplicationGroup group, Application app) {
         boolean removed = group.removeApplication(app);
         if (removed) {
             saveData();
             logger.info("Đã xóa ứng dụng {} khỏi nhóm {}", app.getName(), group.getName());
         }
-        return removed;
     }
 
     public Report createReport(ReportType reportType) {
@@ -258,9 +255,6 @@ public class MainController {
         return saved;
     }
 
-    /**
-     * Hiển thị thông báo lỗi
-     */
     private void showErrorAlert(String title, String message) {
         Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -273,6 +267,10 @@ public class MainController {
 
     public LocalDateTime getCurrentTime() {
         return currentTime;
+    }
+
+    public LimitManager getLimitManager() {
+        return limitManager;
     }
 
 }

@@ -93,7 +93,7 @@ public class LimitsView {
         loadLimits();
     }
 
-    private void loadLimits() {
+    public void loadLimits() {
         Map<Object, Limit> allLimits = controller.getLimitManager().getAllLimits();
         List<LimitInfo> limitInfos = new ArrayList<>();
 
@@ -104,12 +104,10 @@ public class LimitsView {
             String targetName;
             String targetType;
 
-            if (target instanceof Application) {
-                Application app = (Application) target;
+            if (target instanceof Application app) {
                 targetName = app.getName();
                 targetType = "Ứng dụng";
-            } else if (target instanceof ApplicationGroup) {
-                ApplicationGroup group = (ApplicationGroup) target;
+            } else if (target instanceof ApplicationGroup group) {
                 targetName = group.getName();
                 targetType = "Nhóm";
             } else {
@@ -134,30 +132,16 @@ public class LimitsView {
         limitsTable.setItems(FXCollections.observableArrayList(limitInfos));
     }
 
-    private void createNewLimit() {
-        // Trong thực tế sẽ mở một dialog để chọn đối tượng và cấu hình giới hạn
-        // LimitCreationDialog dialog = new LimitCreationDialog(controller);
-        // dialog.showAndWait();
-        // loadLimits();
-
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Tạo giới hạn mới");
-        alert.setHeaderText("Chức năng tạo giới hạn");
-        alert.setContentText("Chức năng tạo giới hạn mới sẽ được triển khai trong phiên bản tiếp theo.");
-        alert.showAndWait();
+    public void createNewLimit() {
+        LimitCreationDialog dialog = new LimitCreationDialog(controller);
+        dialog.showAndWait();
+        loadLimits();
     }
 
-    private void editLimit(LimitInfo limitInfo) {
-        // Trong thực tế sẽ mở một dialog để chỉnh sửa giới hạn
-        // LimitEditDialog dialog = new LimitEditDialog(limitInfo, controller);
-        // dialog.showAndWait();
-        // loadLimits();
-
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Chỉnh sửa giới hạn");
-        alert.setHeaderText("Chức năng chỉnh sửa giới hạn");
-        alert.setContentText("Chức năng chỉnh sửa giới hạn sẽ được triển khai trong phiên bản tiếp theo.");
-        alert.showAndWait();
+    public void editLimit(LimitInfo limitInfo) {
+        LimitEditDialog dialog = new LimitEditDialog(limitInfo, controller);
+        dialog.showAndWait();
+        loadLimits();
     }
 
     private void deleteLimit(LimitInfo limitInfo) {

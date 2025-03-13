@@ -20,20 +20,17 @@ public class UserSettings implements IConfigurable {
     private static final String USER_HOME = System.getProperty("user.home");
     private static final String CONFIG_DIR = Paths.get(USER_HOME, ".promonitor").toString();
 
-    // Cài đặt thông báo
     private NotificationType notificationType;
     private boolean notificationsEnabled;
     private String soundAlertPath;
-    private int warningThresholdMinutes; // Số phút trước khi hết giới hạn để hiện cảnh báo
+    private int warningThresholdMinutes; 
 
-    // Cài đặt chung
     private boolean startAtLogin;
     private boolean minimizeToTray;
     private boolean autoStartMonitoring;
     private MonitorMode monitorMode;
 
     public UserSettings() {
-        // Cài đặt mặc định
         this.notificationType = NotificationType.POPUP;
         this.notificationsEnabled = true;
         this.soundAlertPath = "default_alert.wav";
@@ -49,9 +46,8 @@ public class UserSettings implements IConfigurable {
         File configFile = new File(CONFIG_DIR, SETTINGS_FILENAME);
 
         if (!configFile.exists()) {
-            // Tạo thư mục nếu chưa tồn tại
             new File(CONFIG_DIR).mkdirs();
-            return saveSettings(); // Lưu cài đặt mặc định
+            return saveSettings();
         }
 
         Properties properties = new Properties();
@@ -59,7 +55,6 @@ public class UserSettings implements IConfigurable {
         try (FileInputStream fis = new FileInputStream(configFile)) {
             properties.load(fis);
 
-            // Tải cài đặt thông báo
             try {
                 this.notificationType = NotificationType.valueOf(
                         properties.getProperty("notificationType", NotificationType.POPUP.name())
@@ -75,8 +70,6 @@ public class UserSettings implements IConfigurable {
             this.warningThresholdMinutes = Integer.parseInt(
                     properties.getProperty("warningThresholdMinutes", "5")
             );
-
-            // Tải cài đặt chung
             this.startAtLogin = Boolean.parseBoolean(
                     properties.getProperty("startAtLogin", "false")
             );
@@ -133,7 +126,6 @@ public class UserSettings implements IConfigurable {
         }
     }
 
-    // Getters và setters
     public NotificationType getNotificationType() {
         return notificationType;
     }

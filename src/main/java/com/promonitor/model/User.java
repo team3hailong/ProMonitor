@@ -3,6 +3,7 @@ package com.promonitor.model;
 import com.promonitor.controller.UserSettings;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 
@@ -20,15 +21,10 @@ public class User {
         this.createdDate = LocalDate.now();
     }
 
-    /**
-     * Lưu cài đặt người dùng
-     * @return true nếu lưu thành công
-     */
     public boolean saveSettings() {
         return settings.saveSettings();
     }
 
-    // Getters và setters
     public String getUserId() {
         return userId;
     }
@@ -45,8 +41,8 @@ public class User {
         return settings;
     }
 
-    public LocalDate getCreatedDate() {
-        return createdDate;
+    public String getCreatedDate() {
+        return createdDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     }
 
     @Override

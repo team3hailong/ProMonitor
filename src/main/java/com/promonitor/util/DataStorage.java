@@ -7,8 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.*;
 
@@ -26,7 +24,6 @@ public class DataStorage {
         this.dataDir = System.getProperty("user.home") + File.separator +
                 ".promonitor" + File.separator + userId;
 
-        // Tạo thư mục lưu trữ nếu chưa tồn tại
         createDataDirectory();
     }
 
@@ -74,7 +71,6 @@ public class DataStorage {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public List<ApplicationGroup> loadApplicationGroups() {
         String filePath = dataDir + File.separator + GROUPS_FILE;
         File file = new File(filePath);
@@ -122,13 +118,11 @@ public class DataStorage {
                 sLimit.type = limit.getType().name();
                 sLimit.durationSeconds = limit.getValue().getSeconds();
 
-                if (entry.getKey() instanceof Application) {
-                    Application app = (Application) entry.getKey();
+                if (entry.getKey() instanceof Application app) {
                     sLimit.targetType = "APPLICATION";
                     sLimit.targetName = app.getName();
                     sLimit.targetId = String.valueOf(app.getProcessId());
-                } else if (entry.getKey() instanceof ApplicationGroup) {
-                    ApplicationGroup group = (ApplicationGroup) entry.getKey();
+                } else if (entry.getKey() instanceof ApplicationGroup group) {
                     sLimit.targetType = "GROUP";
                     sLimit.targetName = group.getName();
                 }
@@ -148,7 +142,6 @@ public class DataStorage {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public boolean loadLimits(LimitManager limitManager) {
         String filePath = dataDir + File.separator + LIMITS_FILE;
         File file = new File(filePath);
@@ -166,19 +159,16 @@ public class DataStorage {
                 Duration value = Duration.ofSeconds(sLimit.durationSeconds);
                 Limit limit = new Limit(limitType, value);
 
-                // Khôi phục lịch trình nếu có
                 if (limitType == LimitType.SCHEDULE && sLimit.scheduleData != null) {
                     Schedule schedule = deserializeSchedule(sLimit.scheduleData);
                     limit.setSchedule(schedule);
                 }
 
-                // Áp dụng giới hạn cho đối tượng tương ứng
                 if ("APPLICATION".equals(sLimit.targetType)) {
                     Application app = new Application(sLimit.targetName,
                             Integer.parseInt(sLimit.targetId));
                     limitManager.setLimit(app, limit);
                 } else if ("GROUP".equals(sLimit.targetType)) {
-                    // Tìm nhóm trong danh sách đã tải
                     List<ApplicationGroup> groups = loadApplicationGroups();
                     for (ApplicationGroup group : groups) {
                         if (group.getName().equals(sLimit.targetName)) {
@@ -197,7 +187,6 @@ public class DataStorage {
         }
     }
 
-    // Các phương thức hỗ trợ để chuyển đổi Schedule sang/từ dạng serializable
     private Map<String, String> serializeSchedule(Schedule schedule) {
         Map<String, String> data = new HashMap<>();
         // Thực hiện tuần tự hóa lịch trình
@@ -206,12 +195,11 @@ public class DataStorage {
     }
 
     private Schedule deserializeSchedule(Map<String, String> data) {
-        Schedule schedule = new Schedule();
-        return schedule;
+        return new Schedule();
     }
 
-    // Các lớp hỗ trợ để lưu dữ liệu có thể serialize
     private static class SerializableApplication implements Serializable {
+        @Serial
         private static final long serialVersionUID = 1L;
         String name;
         int processId;
@@ -219,12 +207,14 @@ public class DataStorage {
     }
 
     private static class SerializableGroup implements Serializable {
+        @Serial
         private static final long serialVersionUID = 1L;
         String name;
         List<SerializableApplication> applications = new ArrayList<>();
     }
 
     private static class SerializableLimit implements Serializable {
+        @Serial
         private static final long serialVersionUID = 1L;
         String type;
         long durationSeconds;

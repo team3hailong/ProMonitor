@@ -11,22 +11,19 @@ import com.sun.jna.platform.win32.WinDef.HWND;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.sun.jna.ptr.IntByReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Monitor implements IReportable {
     private static final Logger logger = LoggerFactory.getLogger(Monitor.class);
 
-    private final Map<String, Application> runningApplications; // ID -> Application
     private final Map<String, TimeTracker> timeTrackers; // ID -> TimeTracker
     private final Map<ApplicationGroup, Duration> groupUsageMap; // Group -> Total duration
 
@@ -46,8 +43,10 @@ public class Monitor implements IReportable {
     private static final int UPDATE_INTERVAL_MS = 1000;
     private static final User32 user32 = User32.INSTANCE;
 
+    private final Set<String> blockedApplications = new HashSet<>();
+    private ScheduledExecutorService blockingMonitor;
+
     public Monitor(LimitManager limitManager, Notifier notifier, UserSettings userSettings) {
-        this.runningApplications = new ConcurrentHashMap<>();
         this.timeTrackers = new ConcurrentHashMap<>();
         this.groupUsageMap = new ConcurrentHashMap<>();
         this.limitManager = limitManager;
@@ -63,7 +62,7 @@ public class Monitor implements IReportable {
         }
 
         monitoring = true;
-        monitoringStartTime = LocalDateTime.now();
+        if(monitoringStartTime == null) monitoringStartTime = LocalDateTime.now();
         lastUpdateTime = monitoringStartTime;
 
         logger.info("Bắt đầu theo dõi ứng dụng vào lúc: {}", monitoringStartTime);
@@ -108,8 +107,9 @@ public class Monitor implements IReportable {
                 return;
             }
 
-            int[] processId = new int[1];
-            user32.GetWindowThreadProcessId(activeWindow, processId);
+            IntByReference processIdRef = new IntByReference();
+            user32.GetWindowThreadProcessId(activeWindow, processIdRef);
+            int processId = processIdRef.getValue();
 
             char[] windowText = new char[512];
             user32.GetWindowText(activeWindow, windowText, 512);
@@ -118,20 +118,16 @@ public class Monitor implements IReportable {
 
             Application currentApp = new Application(
                     windowTitle.isEmpty() ? "Unknown" : windowTitle,
-                    processId[0],
+                    processId,
                     executablePath
             );
 
             String currentAppId = currentApp.getUniqueId();
-
-            runningApplications.put(currentAppId, currentApp);
-
-            // Kiểm tra xem có thay đổi ứng dụng active không
             if (!currentAppId.equals(activeWindowId)) {
 
                 if (activeWindowId != null && timeTrackers.containsKey(activeWindowId)) {
                     TimeTracker previousTracker = timeTrackers.get(activeWindowId);
-                    previousTracker.updateActiveTime();
+                    previousTracker.stopTracking();
                 }
 
                 activeWindowId = currentAppId;
@@ -141,6 +137,10 @@ public class Monitor implements IReportable {
                     timeTrackers.put(currentAppId, newTracker);
                     newTracker.startTracking();
                     logger.debug("Bắt đầu theo dõi ứng dụng mới: {}", currentApp.getName());
+                }
+                else {
+                    TimeTracker lastTracker = timeTrackers.get(activeWindowId);
+                    lastTracker.startTracking();
                 }
             }
 
@@ -172,11 +172,9 @@ public class Monitor implements IReportable {
 
             boolean groupLimitExceeded = limitManager.isGroupLimitExceeded(activeApplication, groupUsageMap);
 
-            // Xử lý khi vượt quá giới hạn
             if (appLimitExceeded || groupLimitExceeded) {
                 handleLimitExceeded(tracker, appLimitExceeded);
             } else {
-                // Kiểm tra cảnh báo trước (nếu sắp vượt quá giới hạn)
                 checkWarningThreshold(tracker);
             }
 
@@ -186,18 +184,14 @@ public class Monitor implements IReportable {
     }
 
     private void updateGroupUsage() {
-        // Reset group usage
         groupUsageMap.clear();
 
-        // Tính tổng thời gian sử dụng cho từng nhóm
         for (TimeTracker tracker : timeTrackers.values()) {
             Application app = tracker.getApplication();
             Duration appUsage = tracker.getTotalTime();
 
-            // Duyệt qua tất cả các giới hạn để tìm các nhóm chứa ứng dụng này
             for (Map.Entry<Object, Limit> entry : limitManager.getAllLimits().entrySet()) {
-                if (entry.getKey() instanceof ApplicationGroup) {
-                    ApplicationGroup group = (ApplicationGroup) entry.getKey();
+                if (entry.getKey() instanceof ApplicationGroup group) {
                     if (group.containsApplication(app)) {
                         Duration currentGroupUsage = groupUsageMap.getOrDefault(group, Duration.ZERO);
                         groupUsageMap.put(group, currentGroupUsage.plus(appUsage));
@@ -224,13 +218,64 @@ public class Monitor implements IReportable {
             notifier.notify(message, "Đã vượt quá giới hạn thời gian", userSettings.getNotificationType());
 
             // TODO: Thực hiện chặn ứng dụng (có thể cần một phương pháp platform-specific)
-            // Ví dụ: minimizeApplication(app.getProcessId());
+            blockApplication(app);
             logger.info("Ứng dụng {} bị chặn do vượt quá giới hạn (chế độ nghiêm ngặt)", appName);
         } else {
             notifier.notify(message, "Đã vượt quá giới hạn thời gian", userSettings.getNotificationType());
             logger.info("Ứng dụng {} đã vượt quá giới hạn (chế độ bình thường)", appName);
         }
     }
+
+    public void blockApplication(Application app) {
+        String fullName = app.getName();
+        blockedApplications.add(fullName);
+        if (fullName.contains(" - ")) {
+            String[] parts = fullName.split(" - ");
+            for (String part : parts) {
+                String trimmedPart = part.trim();
+                if (!trimmedPart.isEmpty()) {
+                    if(trimmedPart.contains("Google"))
+                        trimmedPart = "chrome.exe";
+                    blockedApplications.add(trimmedPart);
+                }
+            }
+        }
+        app.terminate();
+        startBlockingMonitor();
+    }
+
+    private void startBlockingMonitor() {
+        if (blockingMonitor == null || blockingMonitor.isShutdown()) {
+            blockingMonitor = Executors.newSingleThreadScheduledExecutor();
+            blockingMonitor.scheduleAtFixedRate(this::checkAndBlockRestartedApps, 0, 2, TimeUnit.SECONDS);
+        }
+    }
+
+    private void checkAndBlockRestartedApps() {
+        for (String blockedAppName : blockedApplications) {
+            List<Application> openInstances = Application.findRunningApplicationsByName(blockedAppName);
+            for (Application instance : openInstances) {
+                instance.terminate();
+                logger.info("Phát hiện và chặn ứng dụng {} đang cố mở lại", blockedAppName);
+
+                notifier.notify(
+                        "Ứng dụng " + blockedAppName + " đã bị chặn do vượt quá giới hạn thời gian",
+                        "Không thể mở lại ứng dụng",
+                        userSettings.getNotificationType()
+                );
+            }
+        }
+    }
+
+    public void unblockApplication(Application app) {
+        blockedApplications.remove(app.getName());
+        logger.info("Đã bỏ chặn ứng dụng: {}", app.getName());
+
+        if (blockedApplications.isEmpty() && blockingMonitor != null) {
+            blockingMonitor.shutdown();
+        }
+    }
+
 
     private void checkWarningThreshold(TimeTracker tracker) {
         Application app = tracker.getApplication();

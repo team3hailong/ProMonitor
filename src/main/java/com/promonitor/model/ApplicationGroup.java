@@ -34,7 +34,6 @@ public class ApplicationGroup {
                 app.getName().equals(appName) && app.getProcessId() == processId);
     }
 
-    // Getters và setters
     public String getName() {
         return name.get();
     }

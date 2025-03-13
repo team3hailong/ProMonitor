@@ -38,7 +38,7 @@ public class Notifier implements IConfigurable {
     private MediaPlayer alertSound;
     private final String CONFIG_FILE = "notifier_config.properties";
     private Timer blinkTimer;
-    private Stage mainStage; // Tham chiếu đến cửa sổ chính
+    private Stage mainStage;
 
     public Notifier(UserSettings userSettings) {
         this.userSettings = userSettings;
@@ -120,7 +120,6 @@ public class Notifier implements IConfigurable {
         if (traySupported) {
             trayIcon.displayMessage(title, message, MessageType.INFO);
         } else {
-            // Sử dụng JavaFX Alert nếu không hỗ trợ system tray
             Platform.runLater(() -> {
                 Alert alert = new Alert(AlertType.INFORMATION);
                 alert.setTitle(title);

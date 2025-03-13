@@ -27,7 +27,6 @@ public class MainView {
     private BorderPane root;
     private TabPane tabPane;
 
-    // Các view thành phần
     private DashboardView dashboardView;
     private ApplicationsView applicationsView;
     private GroupsView groupsView;
@@ -35,7 +34,6 @@ public class MainView {
     private ReportsView reportsView;
     private SettingsView settingsView;
 
-    // Các thành phần UI khác
     private Label statusLabel;
     private Button startStopButton;
     private Label timerLabel;
@@ -47,26 +45,20 @@ public class MainView {
         initializeUI();
     }
 
-    /**
-     * Khởi tạo giao diện người dùng
-     */
     private void initializeUI() {
         root = new BorderPane();
         root.getStyleClass().add("main-container");
 
-        // Tạo các view thành phần
         dashboardView = new DashboardView(controller);
-        applicationsView = new ApplicationsView(controller);
-        groupsView = new GroupsView(controller);
         limitsView = new LimitsView(controller);
         reportsView = new ReportsView(controller);
         settingsView = new SettingsView(controller);
+        applicationsView = new ApplicationsView(controller, limitsView);
+        groupsView = new GroupsView(controller, limitsView);
 
-        // Tạo TabPane để chứa các view
         tabPane = new TabPane();
         tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
 
-        // Tạo các tab
         Map<String, Node> tabContents = new HashMap<>();
         tabContents.put("Dashboard", dashboardView.getContent());
         tabContents.put("Ứng dụng", applicationsView.getContent());
@@ -179,7 +171,7 @@ public class MainView {
                     applicationsView.updateData();
                 });
             }
-        }, 0, 1000); // Cập nhật mỗi giây
+        }, 0, 1000);
     }
 
     private void updateTimer() {

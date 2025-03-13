@@ -85,10 +85,9 @@ public class SettingsView {
         grid.setPadding(new Insets(0, 0, 10, 0));
 
         addLabelAndValue(grid, 0, "Người dùng:", controller.getCurrentUser().getUserName());
-        addLabelAndValue(grid, 1, "Ngày tạo:", controller.getCurrentUser().getCreatedDate().toString());
+        addLabelAndValue(grid, 1, "Ngày tạo:", controller.getCurrentUser().getCreatedDate());
 
-        LocalDateTime currentTime = LocalDateTime.parse("2025-03-07 12:44:07",
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        LocalDateTime currentTime = LocalDateTime.now();
         addLabelAndValue(grid, 2, "Thời gian hiện tại:",
                 currentTime.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
 

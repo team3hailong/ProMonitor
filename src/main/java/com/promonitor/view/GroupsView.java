@@ -3,10 +3,8 @@ package com.promonitor.view;
 import com.promonitor.controller.MainController;
 import com.promonitor.model.Application;
 import com.promonitor.model.ApplicationGroup;
-import com.promonitor.model.Limit;
 
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -19,6 +17,7 @@ import java.util.Optional;
 
 public class GroupsView {
     private final MainController controller;
+    private final LimitsView limitsView;
     private BorderPane content;
     private ListView<ApplicationGroup> groupsListView;
     private ListView<Application> groupAppsListView;
@@ -26,8 +25,10 @@ public class GroupsView {
     private Label selectedGroupLabel;
     private ApplicationGroup selectedGroup;
 
-    public GroupsView(MainController controller) {
+
+    public GroupsView(MainController controller, LimitsView limitsView) {
         this.controller = controller;
+        this.limitsView = limitsView;
         createContent();
     }
 
@@ -183,10 +184,8 @@ public class GroupsView {
             return;
         }
 
-        // Lấy tất cả ứng dụng đang được theo dõi
         ObservableList<Application> allApps = controller.getApplications();
 
-        // Lọc các ứng dụng không thuộc nhóm hiện tại
         ObservableList<Application> availableApps = allApps.filtered(
                 app -> !selectedGroup.getApplications().contains(app)
         );
@@ -242,22 +241,13 @@ public class GroupsView {
         updateAppComboBox();
     }
 
-    /**
-     * Đặt giới hạn thời gian cho nhóm
-     */
     private void setGroupLimit() {
         if (selectedGroup == null) return;
+        // Đặt giới hạn theo nhóm
+        LimitCreationDialog dialog = new LimitCreationDialog(controller);
+        dialog.showAndWait();
+        limitsView.loadLimits();
 
-        // Trong thực tế sẽ mở một dialog để cấu hình giới hạn
-        // LimitSettingDialog dialog = new LimitSettingDialog(selectedGroup, controller);
-        // dialog.showAndWait();
-
-        // Trong phiên bản đơn giản, chỉ hiển thị một thông báo
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Đặt giới hạn nhóm");
-        alert.setHeaderText("Chức năng đặt giới hạn");
-        alert.setContentText("Chức năng đặt giới hạn cho nhóm sẽ được triển khai trong phiên bản tiếp theo.");
-        alert.showAndWait();
     }
 
     private void updateGroupList() {

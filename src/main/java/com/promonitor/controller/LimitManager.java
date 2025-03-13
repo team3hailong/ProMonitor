@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 public class LimitManager {
     private static final Logger logger = LoggerFactory.getLogger(LimitManager.class);
 
-    private final Map<Object, Limit> limits; // Có thể lưu trữ Application hoặc ApplicationGroup
+    private final Map<Object, Limit> limits;
 
     public LimitManager() {
         this.limits = new HashMap<>();
@@ -29,20 +29,18 @@ public class LimitManager {
         logger.debug("Đã đặt giới hạn cho nhóm {}: {}", group.getName(), limit);
     }
 
-    public boolean removeLimit(Application application) {
+    public void removeLimit(Application application) {
         boolean removed = limits.remove(application) != null;
         if (removed) {
             logger.debug("Đã xóa giới hạn cho ứng dụng: {}", application.getName());
         }
-        return removed;
     }
 
-    public boolean removeLimit(ApplicationGroup group) {
+    public void removeLimit(ApplicationGroup group) {
         boolean removed = limits.remove(group) != null;
         if (removed) {
             logger.debug("Đã xóa giới hạn cho nhóm: {}", group.getName());
         }
-        return removed;
     }
 
     public boolean isLimitExceeded(Application application, Duration usageTime) {
@@ -60,17 +58,15 @@ public class LimitManager {
 
     public boolean isGroupLimitExceeded(Application application, Map<ApplicationGroup, Duration> usageMap) {
         for (Map.Entry<Object, Limit> entry : limits.entrySet()) {
-            if (entry.getKey() instanceof ApplicationGroup) {
-                ApplicationGroup group = (ApplicationGroup) entry.getKey();
+            if (entry.getKey() instanceof ApplicationGroup group) {
                 if (group.containsApplication(application)) {
                     Limit limit = entry.getValue();
                     Duration groupUsage = usageMap.getOrDefault(group, Duration.ZERO);
 
-                    // Kiểm tra xem giới hạn có cần reset không
                     if (limit.needsReset()) {
                         limit.reset();
                         logger.debug("Đã reset giới hạn cho nhóm: {}", group.getName());
-                        continue; // Sau khi reset, kiểm tra nhóm tiếp theo
+                        continue;
                     }
 
                     if (limit.isExceeded(groupUsage)) {

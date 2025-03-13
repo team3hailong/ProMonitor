@@ -178,16 +178,13 @@ public class ReportsView {
     private void displayReport() {
         if (currentReport == null) return;
 
-        // Tạo báo cáo nếu chưa được tạo
         if (!currentReport.generateReport()) {
             showError("Không thể tạo báo cáo", "Không có đủ dữ liệu để tạo báo cáo.");
             return;
         }
 
-        // Cập nhật biểu đồ
         usageChart.setData(currentReport.generateChartData());
 
-        // Cập nhật chi tiết báo cáo
         StringBuilder reportText = new StringBuilder();
         Map<String, Object> data = currentReport.getReportData();
 
@@ -202,7 +199,6 @@ public class ReportsView {
         reportText.append("TỔNG THỜI GIAN SỬ DỤNG: ").append(data.get("totalUsageTime")).append("\n\n");
 
         reportText.append("CHI TIẾT SỬ DỤNG ỨNG DỤNG:\n");
-        @SuppressWarnings("unchecked")
         List<Map<String, Object>> appUsage = (List<Map<String, Object>>) data.get("appUsageData");
 
         for (Map<String, Object> app : appUsage) {

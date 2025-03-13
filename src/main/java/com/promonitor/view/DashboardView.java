@@ -12,7 +12,6 @@ import javafx.scene.chart.PieChart;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -119,10 +118,10 @@ public class DashboardView {
     public void updateData() {
         // Cập nhật tổng thời gian sử dụng
         Duration totalTime = controller.getTotalComputerUsageTime();
-        long hours = totalTime.toHours();
-        int minutes = totalTime.toMinutesPart();
-        int seconds = totalTime.toSecondsPart();
-        totalTimeLabel.setText(String.format("%02d:%02d:%02d", hours, minutes, seconds));
+        long totalHours = totalTime.toHours();
+        int totalMinutes = totalTime.toMinutesPart();
+        int totalSeconds = totalTime.toSecondsPart();
+        totalTimeLabel.setText(String.format("%02d:%02d:%02d", totalHours, totalMinutes, totalSeconds));
 
         // Cập nhật biểu đồ
         List<TimeTracker> topTrackers = controller.getTopApplications(5);

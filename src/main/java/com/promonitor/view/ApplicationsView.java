@@ -4,16 +4,15 @@ import com.promonitor.controller.MainController;
 import com.promonitor.model.Application;
 import com.promonitor.model.Limit;
 import com.promonitor.model.TimeTracker;
+import com.promonitor.view.LimitsView;
 
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,9 +20,11 @@ public class ApplicationsView {
     private final MainController controller;
     private BorderPane content;
     private TableView<AppUsageData> appsTable;
+    private LimitsView limitsView;
 
-    public ApplicationsView(MainController controller) {
+    public ApplicationsView(MainController controller, LimitsView limitsView) {
         this.controller = controller;
+        this.limitsView = limitsView;
         createContent();
     }
 
@@ -64,7 +65,18 @@ public class ApplicationsView {
             {
                 setLimitBtn.setOnAction(event -> {
                     AppUsageData data = getTableView().getItems().get(getIndex());
-
+                    if(!data.getLimitInfo().equals("Không giới hạn")) {
+                        LimitsView.LimitInfo limitInfo = new LimitsView.LimitInfo(
+                                data.getApplication(),  // Assuming AppUsageData has getApplication() method
+                                data.getApplication().getName(),// Or however you get the application name
+                                "Ứng dụng",
+                                data.getLimitInfo(),
+                                null
+                        );
+                        limitsView.editLimit(limitInfo);
+                    }
+                    else
+                        limitsView.createNewLimit();
                 });
             }
 
@@ -94,12 +106,9 @@ public class ApplicationsView {
                     String name = app.getName();
                     int pid = app.getProcessId();
                     String usageTime = tracker.getFormattedTotalTime();
-
                     Limit limit = controller.getLimit(app);
-                    String limitInfo = limit != null ?
-                            limit.getType().getDisplayName() : "Không giới hạn";
 
-                    return new AppUsageData(app, name, pid, usageTime, limitInfo);
+                    return new AppUsageData(app, name, pid, usageTime, limit);
                 })
                 .collect(Collectors.toList());
 
@@ -116,13 +125,16 @@ public class ApplicationsView {
         private final int processId;
         private final String usageTime;
         private final String limitInfo;
+        private final Limit limit;
 
-        public AppUsageData(Application application, String name, int processId, String usageTime, String limitInfo) {
+        public AppUsageData(Application application, String name, int processId, String usageTime, Limit limit) {
             this.application = application;
             this.name = name;
             this.processId = processId;
             this.usageTime = usageTime;
-            this.limitInfo = limitInfo;
+            this.limit = limit;
+            this.limitInfo = limit != null ?
+                limit.getType().getDisplayName() : "Không giới hạn";
         }
 
         public Application getApplication() {
@@ -143,6 +155,9 @@ public class ApplicationsView {
 
         public String getLimitInfo() {
             return limitInfo;
+        }
+        public Limit getLimit() {
+            return limit;
         }
     }
 }

@@ -5,15 +5,14 @@ import com.promonitor.model.interfaces.IReportable;
 import java.awt.Color;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.*;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -22,7 +21,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.PDType0Font;
 
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartUtils;
@@ -48,7 +47,6 @@ public class Report implements IReportable {
         this.data = new ArrayList<>();
         this.reportData = new HashMap<>();
 
-        // Đặt khoảng thời gian dựa trên loại báo cáo
         switch (reportType) {
             case DAILY:
                 this.startDate = LocalDate.now();
@@ -60,7 +58,6 @@ public class Report implements IReportable {
                 this.endDate = today;
                 break;
             case CUSTOM:
-                // Sẽ được đặt thủ công
                 break;
         }
     }
@@ -99,11 +96,10 @@ public class Report implements IReportable {
             generateReport();
         }
 
-        @SuppressWarnings("unchecked")
         List<Map<String, Object>> appUsage = (List<Map<String, Object>>) reportData.get("appUsageData");
 
         ObservableList<PieChart.Data> pieChartData = FXCollections.observableArrayList();
-
+        
         for (Map<String, Object> app : appUsage) {
             String appName = (String) app.get("appName");
             long minutes = (Long) app.get("usageMinutes");
@@ -122,17 +118,14 @@ public class Report implements IReportable {
                 generateReport();
             }
 
-            @SuppressWarnings("unchecked")
             List<Map<String, Object>> appUsage = (List<Map<String, Object>>) reportData.get("appUsageData");
 
-            // Tạo dataset cho biểu đồ
             DefaultPieDataset<String> dataset = new DefaultPieDataset<>();
 
             for (Map<String, Object> app : appUsage) {
                 String appName = (String) app.get("appName");
                 long minutes = (Long) app.get("usageMinutes");
 
-                // Chỉ bao gồm các ứng dụng với thời gian sử dụng đáng kể
                 if (minutes > 1) {
                     dataset.setValue(appName, minutes);
                 }
@@ -168,7 +161,6 @@ public class Report implements IReportable {
             generateReport();
         }
 
-        @SuppressWarnings("unchecked")
         List<Map<String, Object>> appUsage = (List<Map<String, Object>>) reportData.get("appUsageData");
 
         long totalMinutes = (Long) reportData.get("totalUsageMinutes");
@@ -176,7 +168,7 @@ public class Report implements IReportable {
         List<Map<String, Object>> topApps = appUsage.stream()
                 .sorted((a, b) -> Long.compare((Long)b.get("usageMinutes"), (Long)a.get("usageMinutes")))
                 .limit(3)
-                .collect(Collectors.toList());
+                .toList();
 
         if (!topApps.isEmpty()) {
             Map<String, Object> topApp = topApps.get(0);
@@ -206,12 +198,14 @@ public class Report implements IReportable {
         }
 
         if (totalMinutes > 120) {
-            suggestions.add("Hãy áp dụng quy tắc 20-20-20: Cứ mỗi 20 phút, nhìn vào một vật ở khoảng cách 20 feet trong 20 giây.");
+            suggestions.add("Nên tránh sử dụng máy tính liên tục quá 2 giờ. Hãy nghỉ ngơi ít nhất 15 phút giữa các phiên làm việc.");
+
         }
-
-        suggestions.add("Cố gắng phân bổ thời gian sử dụng máy tính của bạn: 70% cho công việc/học tập, 30% cho giải trí.");
-
-        suggestions.add("Nên tránh sử dụng máy tính liên tục quá 2 giờ. Hãy nghỉ ngơi ít nhất 15 phút giữa các phiên làm việc.");
+        if(!suggestions.isEmpty()) {
+            suggestions.add("Danh sách các quy tắc nên được áp dụng:");
+            suggestions.add("Quy tắc 20-20-20: Cứ mỗi 20 phút, nhìn vào một vật ở khoảng cách 20 feet trong 20 giây.");
+            suggestions.add("Quy tắc 70-30: 70% cho công việc/học tập, 30% cho giải trí.");
+        }
 
         if (suggestions.isEmpty()) {
             suggestions.add("Thời gian sử dụng máy tính của bạn có vẻ cân đối. Tốt lắm!");
@@ -221,11 +215,6 @@ public class Report implements IReportable {
         return suggestions;
     }
 
-    /**
-     * Xuất báo cáo ra file
-     * @param format Định dạng xuất (ví dụ: "PDF", "CSV")
-     * @return Đường dẫn đến file đã xuất hoặc null nếu xuất thất bại
-     */
     public String exportReport(String format) {
         if (reportData.isEmpty()) {
             generateReport();
@@ -264,7 +253,7 @@ public class Report implements IReportable {
                     LocalDate trackDate = tt.getStartTime().toLocalDate();
                     return !trackDate.isBefore(startDate) && !trackDate.isAfter(endDate);
                 })
-                .collect(Collectors.toList());
+                .toList();
 
         // Tính tổng thời gian sử dụng
         Duration totalUsage = Duration.ZERO;
@@ -310,9 +299,6 @@ public class Report implements IReportable {
         return reportData;
     }
 
-    /**
-     * Định dạng Duration thành chuỗi dễ đọc
-     */
     private String formatDuration(Duration duration) {
         long hours = duration.toHours();
         int minutes = duration.toMinutesPart();
@@ -321,81 +307,81 @@ public class Report implements IReportable {
         return String.format("%d giờ, %d phút, %d giây", hours, minutes, seconds);
     }
 
-    /**
-     * Xuất báo cáo sang định dạng PDF
-     */
     private String exportToPDF(String fileName) throws Exception {
         String filePath = fileName + ".pdf";
-        PDDocument document = new PDDocument();
-        PDPage page = new PDPage(PDRectangle.A4);
-        document.addPage(page);
 
-        try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
+        URL boldFontUrl = Report.class.getResource("/fonts/timesbd.ttf");
+        URL normalFontUrl = Report.class.getResource("/fonts/times.ttf");
+
+
+
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage(PDRectangle.A4);
+            document.addPage(page);
+            PDPageContentStream contentStream = new PDPageContentStream(document, page);
+            PDType0Font boldFont = PDType0Font.load(document, new File(Objects.requireNonNull(boldFontUrl).toURI()));
+            PDType0Font normalFont = PDType0Font.load(document, new File(Objects.requireNonNull(normalFontUrl).toURI()));
+
             // Tiêu đề
             contentStream.beginText();
-            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 16);
+            contentStream.setFont(boldFont, 16);
             contentStream.newLineAtOffset(50, 750);
             contentStream.showText("Báo Cáo Sử Dụng ProMonitor - " + reportType.getDisplayName());
             contentStream.endText();
 
             // Khoảng thời gian
             contentStream.beginText();
-            contentStream.setFont(PDType1Font.HELVETICA, 12);
+            contentStream.setFont(normalFont, 12);
             contentStream.newLineAtOffset(50, 720);
             contentStream.showText("Khoảng thời gian: " + startDate + " đến " + endDate);
             contentStream.endText();
 
             // Người dùng
             contentStream.beginText();
-            contentStream.setFont(PDType1Font.HELVETICA, 12);
+            contentStream.setFont(normalFont, 12);
             contentStream.newLineAtOffset(50, 700);
             contentStream.showText("Người dùng: " + user.getUserName());
             contentStream.endText();
 
             // Tổng thời gian sử dụng
             contentStream.beginText();
-            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12);
+            contentStream.setFont(boldFont, 12);
             contentStream.newLineAtOffset(50, 670);
             contentStream.showText("Tổng thời gian sử dụng: " + reportData.get("totalUsageTime"));
             contentStream.endText();
 
             // Thời gian sử dụng ứng dụng
             contentStream.beginText();
-            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12);
+            contentStream.setFont(boldFont, 12);
             contentStream.newLineAtOffset(50, 640);
             contentStream.showText("Thời gian sử dụng ứng dụng:");
             contentStream.endText();
 
-            @SuppressWarnings("unchecked")
             List<Map<String, Object>> appUsage = (List<Map<String, Object>>) reportData.get("appUsageData");
 
             float y = 620;
             for (Map<String, Object> app : appUsage) {
                 contentStream.beginText();
-                contentStream.setFont(PDType1Font.HELVETICA, 10);
+                contentStream.setFont(normalFont, 10);
                 contentStream.newLineAtOffset(70, y);
                 contentStream.showText("• " + app.get("appName") + ": " + app.get("usageTime"));
                 contentStream.endText();
                 y -= 20;
 
                 if (y < 100) {
-                    // Tạo trang mới nếu hết không gian
                     contentStream.close();
                     page = new PDPage(PDRectangle.A4);
                     document.addPage(page);
-                    PDPageContentStream newContentStream = new PDPageContentStream(document, page);
-                    contentStream.close();
-                    contentStream = newContentStream;
+                    contentStream = new PDPageContentStream(document, page);
                     y = 750;
                 }
             }
 
-            // Thêm gợi ý
             List<String> suggestions = generateSuggestions();
 
             y -= 30;
             contentStream.beginText();
-            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12);
+            contentStream.setFont(boldFont, 12);
             contentStream.newLineAtOffset(50, y);
             contentStream.showText("Gợi ý tối ưu hóa thời gian sử dụng:");
             contentStream.endText();
@@ -403,7 +389,7 @@ public class Report implements IReportable {
             y -= 20;
             for (String suggestion : suggestions) {
                 contentStream.beginText();
-                contentStream.setFont(PDType1Font.HELVETICA, 10);
+                contentStream.setFont(normalFont, 10);
                 contentStream.newLineAtOffset(70, y);
                 contentStream.showText("• " + suggestion);
                 contentStream.endText();
@@ -424,30 +410,25 @@ public class Report implements IReportable {
             // Thông tin tạo báo cáo
             y -= 40;
             contentStream.beginText();
-            contentStream.setFont(PDType1Font.HELVETICA_ITALIC, 8);
+            contentStream.setFont(normalFont, 8);
             contentStream.newLineAtOffset(50, y);
             contentStream.showText("Báo cáo được tạo vào: " +
                     LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             contentStream.endText();
+            contentStream.close();
+            document.save(filePath);
         }
-
-        document.save(filePath);
-        document.close();
 
         logger.info("Đã xuất báo cáo PDF: {}", filePath);
         return filePath;
     }
 
-    /**
-     * Xuất báo cáo sang định dạng CSV
-     */
     private String exportToCSV(String fileName) throws Exception {
         String filePath = fileName + ".csv";
 
         StringBuilder csvContent = new StringBuilder();
         csvContent.append("Ứng dụng,Thời gian sử dụng (phút),Thời gian sử dụng (giờ),Thời gian sử dụng\n");
 
-        @SuppressWarnings("unchecked")
         List<Map<String, Object>> appUsage = (List<Map<String, Object>>) reportData.get("appUsageData");
 
         for (Map<String, Object> app : appUsage) {
@@ -456,9 +437,10 @@ public class Report implements IReportable {
                     .append(app.get("usageHours")).append(",")
                     .append(app.get("usageTime")).append("\n");
         }
-
-        try (FileOutputStream fos = new FileOutputStream(filePath)) {
-            fos.write(csvContent.toString().getBytes());
+        String bom = "\uFEFF";
+        try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(filePath), StandardCharsets.UTF_8)) {
+            writer.write(bom);
+            writer.write(csvContent.toString());
         }
 
         logger.info("Đã xuất báo cáo CSV: {}", filePath);

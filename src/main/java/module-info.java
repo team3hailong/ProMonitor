@@ -10,8 +10,11 @@ module com.example.promonitor {
     requires org.apache.pdfbox;
     requires org.jfree.jfreechart;
     requires javafx.media;
+    requires java.logging;
 
 
     opens com.promonitor to javafx.fxml;
     exports com.promonitor;
+
+    opens com.promonitor.view to javafx.base, javafx.fxml;
 }

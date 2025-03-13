@@ -12,7 +12,7 @@ public class TimeTracker {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private boolean isRunning;
-    private LocalDateTime lastActiveTime; // Thời điểm cuối cùng ứng dụng được active
+    private LocalDateTime lastActiveTime;
 
     public TimeTracker(Application application) {
         this.application = application;
@@ -20,9 +20,6 @@ public class TimeTracker {
         this.isRunning = false;
     }
 
-    /**
-     * Bắt đầu theo dõi thời gian
-     */
     public void startTracking() {
         if (!isRunning) {
             startTime = LocalDateTime.now();
@@ -31,9 +28,6 @@ public class TimeTracker {
         }
     }
 
-    /**
-     * Dừng theo dõi thời gian
-     */
     public void stopTracking() {
         if (isRunning) {
             endTime = LocalDateTime.now();
@@ -42,24 +36,16 @@ public class TimeTracker {
         }
     }
 
-    /**
-     * Ghi nhận thời điểm ứng dụng được kích hoạt
-     */
     public void updateActiveTime() {
         if (isRunning) {
-            // Cập nhật thời gian tích lũy từ lần active trước đến giờ
             LocalDateTime now = LocalDateTime.now();
             Duration sessionDuration = Duration.between(lastActiveTime, now);
             totalTime.set(totalTime.get().plus(sessionDuration));
 
-            // Cập nhật thời điểm active mới
             lastActiveTime = now;
         }
     }
 
-    /**
-     * Cập nhật tổng thời gian sử dụng
-     */
     private void updateTotalTime() {
         if (startTime != null && endTime != null) {
             Duration sessionDuration = Duration.between(lastActiveTime, endTime);
@@ -67,10 +53,6 @@ public class TimeTracker {
         }
     }
 
-    /**
-     * Tính toán tổng thời gian sử dụng
-     * @return Tổng thời gian sử dụng
-     */
     public Duration getTotalTime() {
         if (isRunning) {
             LocalDateTime now = LocalDateTime.now();
@@ -80,34 +62,18 @@ public class TimeTracker {
         return totalTime.get();
     }
 
-    /**
-     * Lấy thời gian sử dụng theo giây
-     * @return Số giây sử dụng
-     */
     public long getTotalTimeInSeconds() {
         return getTotalTime().getSeconds();
     }
 
-    /**
-     * Lấy thời gian sử dụng theo phút
-     * @return Số phút sử dụng
-     */
     public long getTotalTimeInMinutes() {
         return getTotalTime().toMinutes();
     }
 
-    /**
-     * Lấy thời gian sử dụng theo giờ
-     * @return Số giờ sử dụng
-     */
     public long getTotalTimeInHours() {
         return getTotalTime().toHours();
     }
 
-    /**
-     * Định dạng thời gian sử dụng thành chuỗi dễ đọc (HH:MM:SS)
-     * @return Chuỗi thời gian đã định dạng
-     */
     public String getFormattedTotalTime() {
         Duration duration = getTotalTime();
         long hours = duration.toHours();
@@ -116,8 +82,7 @@ public class TimeTracker {
 
         return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
-
-    // Getter
+    
     public Application getApplication() {
         return application;
     }
