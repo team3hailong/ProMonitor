@@ -1,0 +1,149 @@
+/* Modern styling for limit creation dialog */
+
+.limit-creation-dialog {
+    -fx-background-color: #f8f9fa;
+}
+
+.dialog-header {
+    -fx-font-size: 18px;
+    -fx-padding: 10px 0;
+}
+
+.limit-form {
+    -fx-background-color: white;
+    -fx-background-radius: 6px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 2);
+}
+
+.form-grid {
+    -fx-background-color: transparent;
+}
+
+.label {
+    -fx-font-size: 14px;
+    -fx-font-weight: normal;
+    -fx-text-fill: #34495e;
+}
+
+.title-label {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+}
+
+.message-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: #34495e;
+}
+
+.combo-box-styled {
+    -fx-background-color: white;
+    -fx-border-color: #dce4ec;
+    -fx-border-radius: 4px;
+    -fx-padding: 6px;
+}
+
+.combo-box-styled .arrow-button {
+    -fx-background-color: #ecf0f1;
+    -fx-background-radius: 0 4px 4px 0;
+}
+
+.combo-box-styled:focused {
+    -fx-border-color: #3498db;
+    -fx-effect: dropshadow(three-pass-box, rgba(52, 152, 219, 0.2), 5, 0, 0, 0);
+}
+
+.time-field {
+    -fx-background-color: white;
+    -fx-border-color: #dce4ec;
+    -fx-border-radius: 4px;
+    -fx-padding: 8px;
+    -fx-alignment: center;
+    -fx-font-size: 14px;
+}
+
+.time-field:focused {
+    -fx-border-color: #3498db;
+    -fx-effect: dropshadow(three-pass-box, rgba(52, 152, 219, 0.2), 5, 0, 0, 0);
+}
+
+.time-unit-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #7f8c8d;
+    -fx-alignment: center;
+}
+
+.time-input-box {
+    -fx-alignment: center-left;
+    -fx-spacing: 15px;
+}
+
+.create-button, .update-button {
+    -fx-background-color: #3498db;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 8px 16px;
+    -fx-border-radius: 4px;
+}
+
+.create-button:hover, .update-button:hover {
+    -fx-background-color: #2980b9;
+    -fx-cursor: hand;
+}
+
+.cancel-button {
+    -fx-background-color: #dadce0;
+    -fx-text-fill: #555;
+    -fx-font-weight: bold;
+    -fx-background-radius: 4px;
+    -fx-padding: 8px 20px;
+}
+
+.cancel-button:hover {
+    -fx-background-color: #e0e0e0;
+    -fx-cursor: hand;
+}
+
+.delete-button {
+    -fx-background-color: #e74c3c;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 4px;
+    -fx-padding: 8px 20px;
+}
+
+.delete-button:hover {
+    -fx-background-color: #c0392b;
+    -fx-cursor: hand;
+}
+
+
+.modern-separator {
+    -fx-background-color: #ecf0f1;
+    -fx-opacity: 0.8;
+}
+
+.combo-box-styled:hover,
+.time-field:hover {
+    -fx-border-color: #bdc3c7;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 3, 0, 0, 0);
+}
+
+.toast-container {
+    -fx-background-color: white;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-border-width: 1px;
+    -fx-border-color: #ecf0f1;
+}
+
+.toast-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+}
+
+.toast-message {
+    -fx-font-size: 13px;
+    -fx-text-fill: #34495e;
+}

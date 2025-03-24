@@ -1,0 +1,201 @@
+@startuml "ProMonitor Class Diagram"
+
+' Main Controller
+class MainController {
+  -timeTracker: TimeTracker
+  -limitManager: LimitManager
+  -notifier: Notifier
+  -userSettings: UserSettings
+  -currentUser: User
+  +toggleMonitoring(): void
+  +isMonitoring(): boolean
+  +getCurrentUser(): User
+  +createLimit(target: Object, limitType: LimitType, duration: Duration): Limit
+}
+
+' Models
+class Application {
+  -name: String
+  -processName: String
+  -icon: Image
+  +getName(): String
+  +getProcessName(): String
+  +getIcon(): Image
+}
+
+class ApplicationGroup {
+  -name: String
+  -applications: List<Application>
+  +getName(): String
+  +addApplication(app: Application): void
+  +removeApplication(app: Application): void
+  +containsApplication(app: Application): boolean
+  +getApplications(): List<Application>
+}
+
+enum LimitType {
+  DAILY
+  WEEKLY
+  ONE_TIME
+}
+
+class Limit {
+  -duration: Duration
+  -type: LimitType
+  -startTime: LocalDateTime
+  +isExceeded(usageTime: Duration): boolean
+  +needsReset(): boolean
+  +reset(): void
+}
+
+class TimeTracker {
+  -applicationUsage: Map<Application, Duration>
+  -groupUsage: Map<ApplicationGroup, Duration>
+  +trackApplication(app: Application): void
+  +stopTracking(): void
+  +getUsageTime(app: Application): Duration
+  +getGroupUsageTime(group: ApplicationGroup): Duration
+}
+
+class UserSettings {
+  -notificationsEnabled: boolean
+  -notificationType: NotificationType
+  -warningThreshold: int
+  -startAtLogin: boolean
+  -minimizeToTray: boolean
+  -autoStartMonitoring: boolean
+  -monitorMode: MonitorMode
+  -soundPath: String
+}
+
+enum NotificationType {
+  SYSTEM
+  POPUP
+  BOTH
+}
+
+enum MonitorMode {
+  ACTIVE_WINDOW
+  ALL_WINDOWS
+}
+
+class DataStorage {
+  +saveApplicationData(): void
+  +loadApplicationData(): List<AppUsageData>
+}
+
+class AppUsageData {
+  -application: Application
+  -totalTime: Duration
+  -lastUsed: LocalDateTime
+  -limitStatus: boolean
+}
+
+class Notifier{
+  -trayIcon: TrayIcon
+  -alertSound: MediaPlayer
+  -blinkTimer: Timer
+  -mainStage: Stage
+  +notify(message: String, title: String, type: NotificationType): void
+  +showPopupNotification(message: String, title: String): void
+  +playAlertSound(): void
+  +blinkTaskbarIcon(): void
+}
+
+interface IConfigurable {
+  +saveConfig(): void
+  +loadConfig(): void
+}
+
+' Views
+class MainView {
+  -controller: MainController
+  -root: BorderPane
+  -statusLabel: Label
+  -startStopButton: Button
+  -timerLabel: Label
+  -currentTimeLabel: Label
+  +updateStartStopButton(isMonitoring: boolean): void
+  +toggleMonitoring(): void
+  +updateCurrentTime(): void
+}
+
+class ApplicationsView {
+  -controller: MainController
+  -limitsView: LimitsView
+  -content: BorderPane
+  -dataStorage: DataStorage
+  -filteredData: FilteredList<AppUsageData>
+  +createContent(): void
+  +updateData(): void
+  +updateStatistics(): void
+}
+
+class SettingsView {
+  -controller: MainController
+  -content: BorderPane
+  -currentSettings: UserSettings
+  -toastArea: BorderPane
+  +loadSettings(): void
+  +saveSettings(): void
+  +showToast(message: String, type: String): void
+}
+
+class LimitCreationDialog {
+  -controller: MainController
+  -targetCombo: ComboBox<Object>
+  -limitTypeCombo: ComboBox<LimitType>
+  -hoursField: TextField
+  -minutesField: TextField
+  +updateTargetCombo(targetType: String): void
+}
+
+' Relationships
+' Relationships with proper UML notation
+' Composition (strong whole-part relationship with filled diamond)
+MainController *-- TimeTracker
+MainController *-- LimitManager
+
+' Aggregation (whole-part relationship with unfilled diamond)
+MainController o-- Notifier
+MainController o-- UserSettings
+
+' Association (object references another)
+LimitManager "1" -- "0..*" Limit : manages 
+LimitManager "1" -- "0..*" Application : monitors 
+LimitManager "1" -- "0..*" ApplicationGroup : monitors
+
+' Association with labels
+TimeTracker "1" -- "0..*" Application : tracks 
+TimeTracker "1" -- "0..*" ApplicationGroup : tracks 
+
+' Dependency
+MainView ..> MainController : uses 
+ApplicationsView ..> MainController : uses 
+SettingsView ..> MainController : uses 
+LimitCreationDialog ..> MainController : uses 
+
+' Inheritance
+Limit *-- LimitType : has-a 
+
+ApplicationGroup *-- "0..*" Application
+
+ApplicationsView ..> LimitsView : references 
+
+Notifier ..|> IConfigurable : implements
+
+DataStorage *-- AppUsageData
+AppUsageData *-- Application : references 
+
+' Association with stereotype
+Notifier "1" -- "1" UserSettings : uses
+
+' Enum associations
+UserSettings -- NotificationType : has 
+UserSettings -- MonitorMode : has 
+
+' Usage relationships
+LimitCreationDialog ..> Limit : creates 
+LimitCreationDialog ..> LimitType : selects 
+
+@enduml

@@ -1,0 +1,91 @@
+@startuml ProMonitor Activity Diagram
+
+start
+
+:User launches ProMonitor application;
+
+if (autoStartMonitoring enabled?) then (yes)
+  :Start monitoring automatically;
+else (no)
+  :Display main interface;
+endif
+
+repeat
+  :User interacts with application;
+  
+  fork
+    :View applications usage;
+  fork again
+    :Manage application groups;
+  fork again
+    :Configure settings;
+  fork again
+    :View usage reports;
+  fork again
+    if (monitoring status) then (not monitoring)
+      :Click "Start Monitoring";
+      :Update UI - Change button to "Stop Monitoring";
+      :Begin tracking active applications;
+    else (monitoring)
+      :Click "Stop Monitoring";
+      :Update UI - Change button to "Start Monitoring";
+      :Stop tracking applications;
+    endif
+  end fork
+  
+  if (monitoring active?) then (yes)
+    :Track active application;
+    :Update usage time;
+    
+    if (limit exists for application?) then (yes)
+      if (limit needs reset?) then (yes)
+        :Reset limit counter;
+      else (no)
+        if (approaching limit threshold?) then (yes)
+          :Send warning notification;
+        endif
+        
+        if (limit exceeded?) then (yes)
+          :Send limit exceeded notification;
+          
+          if (notification type includes sound?) then (yes)
+            :Play alert sound;
+          endif
+          
+          if (notification type includes system notification?) then (yes)
+            :Show system tray notification;
+          endif
+          
+          if (notification type includes popup?) then (yes)
+            :Show popup notification;
+          endif
+        endif
+      endif
+    endif
+    
+    if (group limit exists for application?) then (yes)
+      if (group limit needs reset?) then (yes)
+        :Reset group limit counter;
+      else (no)
+        if (group approaching limit threshold?) then (yes)
+          :Send group warning notification;
+        endif
+        
+        if (group limit exceeded?) then (yes)
+          :Send group limit exceeded notification;
+        endif
+      endif
+    endif
+    
+    :Update UI statistics;
+    :Store usage data;
+  endif
+  
+repeat while (application running?)
+
+:Save application data;
+:Exit application;
+
+stop
+
+@enduml
