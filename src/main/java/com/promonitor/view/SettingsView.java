@@ -4,11 +4,14 @@ import com.promonitor.controller.MainController;
 import com.promonitor.model.enums.MonitorMode;
 import com.promonitor.model.enums.NotificationType;
 import com.promonitor.controller.UserSettings;
+import com.promonitor.model.enums.UserMode;
 
+import com.promonitor.util.AlertHelper;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 
-import javafx.animation.PauseTransition;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -17,16 +20,17 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
-import javafx.util.Duration;
 import javafx.util.StringConverter;
 
 import java.io.File;
+
+import static com.promonitor.util.AlertHelper.showToast;
 
 public class SettingsView {
     private final MainController controller;
     private BorderPane content;
     private UserSettings currentSettings;
-    private BorderPane toastArea;
+    private final ObjectProperty<UserMode> userModeProperty;
 
     private ComboBox<NotificationType> notificationTypeCombo;
     private CheckBox notificationsEnabledCheck;
@@ -36,11 +40,17 @@ public class SettingsView {
     private CheckBox minimizeToTrayCheck;
     private CheckBox autoStartMonitoringCheck;
     private ComboBox<MonitorMode> monitorModeCombo;
+    private ComboBox<UserMode> userModeCombo;
 
     public SettingsView(MainController controller) {
         this.controller = controller;
+        this.userModeProperty = new SimpleObjectProperty<>();
         this.currentSettings = controller.getCurrentUser().getSettings();
         createContent();
+    }
+
+    public ObjectProperty<UserMode> getUserModeComboProperty() {
+        return userModeCombo.valueProperty();
     }
 
     private void createContent() {
@@ -73,19 +83,17 @@ public class SettingsView {
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scrollPane.getStyleClass().add("settings-scroll-pane");
 
         VBox settingsBox = new VBox(15);
         settingsBox.setPadding(new Insets(10, 0, 0, 0));
 
         settingsBox.getChildren().add(createUserInfoSection());
 
+        VBox userModeCard = createUserModeSettingsCard();
         VBox notificationCard = createNotificationSettingsCard();
         VBox generalCard = createGeneralSettingsCard();
 
-        settingsBox.getChildren().addAll(notificationCard, generalCard);
-
-        BorderPane bottomArea = new BorderPane();
+        settingsBox.getChildren().addAll(userModeCard, notificationCard, generalCard);
 
         Button saveButton = new Button("Lưu cài đặt");
         saveButton.getStyleClass().add("save-button");
@@ -101,16 +109,7 @@ public class SettingsView {
         HBox buttonBox = new HBox(saveButton);
         buttonBox.setAlignment(Pos.CENTER_RIGHT);
         buttonBox.setPadding(new Insets(10, 0, 0, 0));
-
-        // Toast area for notifications
-        toastArea = new BorderPane();
-        toastArea.setPadding(new Insets(0, 0, 10, 0));
-        toastArea.setVisible(false);
-
-        bottomArea.setTop(toastArea);
-        bottomArea.setBottom(buttonBox);
-
-        settingsBox.getChildren().add(bottomArea);
+        settingsBox.getChildren().add(buttonBox);
 
         scrollPane.setContent(settingsBox);
         content.setCenter(scrollPane);
@@ -164,6 +163,103 @@ public class SettingsView {
 
         section.getChildren().addAll(headerBox, userInfoBox);
         return section;
+    }
+
+    private VBox createUserModeSettingsCard() {
+        VBox card = new VBox(15);
+        card.getStyleClass().add("settings-card");
+        card.setPadding(new Insets(20));
+
+        HBox headerBox = new HBox(10);
+        headerBox.setAlignment(Pos.CENTER_LEFT);
+
+        FontAwesomeIconView settingIcon = new FontAwesomeIconView(FontAwesomeIcon.USERS);
+        settingIcon.setGlyphSize(16);
+        settingIcon.setFill(Color.valueOf("#4a6bff"));
+
+        Label headerLabel = new Label("Chế độ người dùng");
+        headerLabel.getStyleClass().add("settings-card-title");
+
+        headerBox.getChildren().addAll(settingIcon, headerLabel);
+
+        Separator divider = new Separator();
+        divider.getStyleClass().add("settings-separator");
+
+        HBox modeBox = new HBox(10);
+        modeBox.getStyleClass().add("settings-row");
+
+        Label modeLabel = new Label("Chế độ:");
+        modeLabel.getStyleClass().add("setting-label");
+
+        userModeCombo = new ComboBox<>(FXCollections.observableArrayList(UserMode.values()));
+        userModeCombo.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(UserMode mode) {
+                return mode != null ? mode.getDisplayName() : "";
+            }
+
+            @Override
+            public UserMode fromString(String string) {
+                return null; // Not used
+            }
+        });
+        HBox.setHgrow(userModeCombo, Priority.ALWAYS);
+
+        modeBox.getChildren().addAll(modeLabel, userModeCombo);
+
+        Label modeDescLabel = new Label();
+        modeDescLabel.setWrapText(true);
+        modeDescLabel.getStyleClass().add("description-text");
+
+        userModeCombo.getSelectionModel().selectedItemProperty().addListener(
+                (obs, oldVal, newVal) -> {
+                    if (newVal != null) {
+                        modeDescLabel.setText(newVal.getDescription());
+                        
+                        // If mode is changing and it's not the first load
+                        if (oldVal != null && oldVal != newVal) {
+                            // Save current settings for the old mode
+                            UserSettings tempSettings = new UserSettings();
+                            tempSettings.setNotificationType(notificationTypeCombo.getValue());
+                            tempSettings.setNotificationsEnabled(notificationsEnabledCheck.isSelected());
+                            tempSettings.setSoundAlertPath(soundPathField.getText());
+                            tempSettings.setWarningThresholdMinutes(warningThresholdSpinner.getValue());
+                            tempSettings.setMonitorMode(monitorModeCombo.getValue());
+                            tempSettings.setUserMode(oldVal);
+                            
+                            controller.getCurrentUser().getSettings().saveModeSettings(oldVal);
+                            
+                            // Apply saved settings for the new mode
+                            controller.getCurrentUser().getSettings().setUserMode(newVal);
+                            controller.getCurrentUser().getSettings().applyModeSettings(newVal);
+                            
+                            // Update UI with the newly applied settings
+                            updateUIFromSettings();
+                            
+                            // Indicate settings were adjusted
+                            showToast(this.getContent(), 
+                                "Cài đặt đã được điều chỉnh cho chế độ " + newVal.getDisplayName(), 
+                                AlertHelper.ToastType.INFO);
+                        }
+                    }
+                }
+        );
+
+        card.getChildren().addAll(headerBox, divider, modeBox, modeDescLabel);
+
+        return card;
+    }
+    
+    /**
+     * Updates UI components to match current settings
+     */
+    private void updateUIFromSettings() {
+        UserSettings settings = controller.getCurrentUser().getSettings();
+        notificationTypeCombo.setValue(settings.getNotificationType());
+        notificationsEnabledCheck.setSelected(settings.isNotificationsEnabled());
+        soundPathField.setText(settings.getSoundAlertPath());
+        warningThresholdSpinner.getValueFactory().setValue(settings.getWarningThresholdMinutes());
+        monitorModeCombo.setValue(settings.getMonitorMode());
     }
 
     private VBox createNotificationSettingsCard() {
@@ -286,7 +382,7 @@ public class SettingsView {
 
         VBox startupBox = new VBox(10);
 
-        Label startupLabel = new Label("Tùy chọn khởi động");
+        Label startupLabel = new Label("Tùy chọn khởi động (Áp dụng cho mọi chế độ người dùng)");
         startupLabel.getStyleClass().add("settings-category");
 
         startAtLoginCheck = new CheckBox("Tự động khởi động khi đăng nhập vào hệ thống");
@@ -365,6 +461,7 @@ public class SettingsView {
         minimizeToTrayCheck.setSelected(currentSettings.isMinimizeToTray());
         autoStartMonitoringCheck.setSelected(currentSettings.isAutoStartMonitoring());
         monitorModeCombo.getSelectionModel().select(currentSettings.getMonitorMode());
+        userModeCombo.getSelectionModel().select(currentSettings.getUserMode());
     }
 
     private void saveSettings() {
@@ -379,42 +476,16 @@ public class SettingsView {
         newSettings.setMinimizeToTray(minimizeToTrayCheck.isSelected());
         newSettings.setAutoStartMonitoring(autoStartMonitoringCheck.isSelected());
         newSettings.setMonitorMode(monitorModeCombo.getValue());
+        newSettings.setUserMode(userModeCombo.getValue());
 
         boolean saved = controller.updateUserSettings(newSettings);
 
         if (saved) {
-            showToast("Cài đặt của bạn đã được lưu thành công", "success");
+            showToast(this.getContent(),"Cài đặt của bạn đã được lưu thành công", AlertHelper.ToastType.SUCCESS);
             this.currentSettings = controller.getCurrentUser().getSettings();
         } else {
-            showToast("Đã xảy ra lỗi khi lưu cài đặt", "error");
+            showToast(this.getContent(),"Đã xảy ra lỗi khi lưu cài đặt", AlertHelper.ToastType.ERROR);
         }
-    }
-
-    private void showToast(String message, String type) {
-        HBox toastBox = new HBox(10);
-        toastBox.setAlignment(Pos.CENTER_LEFT);
-        toastBox.getStyleClass().add(type.equals("success") ? "toast-success" : "toast-error");
-
-        FontAwesomeIconView icon;
-        if (type.equals("success")) {
-            icon = new FontAwesomeIconView(FontAwesomeIcon.CHECK_CIRCLE);
-        } else {
-            icon = new FontAwesomeIconView(FontAwesomeIcon.EXCLAMATION_CIRCLE);
-        }
-        icon.setGlyphSize(16);
-        icon.getStyleClass().add("toast-icon");
-
-        Label messageLabel = new Label(message);
-        messageLabel.getStyleClass().add("toast-message");
-
-        toastBox.getChildren().addAll(icon, messageLabel);
-
-        toastArea.setCenter(toastBox);
-        toastArea.setVisible(true);
-
-        PauseTransition pause = new PauseTransition(Duration.seconds(3));
-        pause.setOnFinished(event -> toastArea.setVisible(false));
-        pause.play();
     }
 
     public Node getContent() {

@@ -5,17 +5,15 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.Optional;
 
 public class Application {
     private static final Logger logger = LoggerFactory.getLogger(Application.class);
@@ -23,12 +21,16 @@ public class Application {
     private final StringProperty name = new SimpleStringProperty();
     private final IntegerProperty processId = new SimpleIntegerProperty();
     private final StringProperty executablePath = new SimpleStringProperty();
-    @JsonIgnore
+    private static final String DEFAULT_ICON_PATH = "/images/default-app.png";
     private Image icon;
 
     public Application(String name, int processId) {
         this.name.set(name);
         this.processId.set(processId);
+        getExecutablePath(processId).ifPresent(this.executablePath::set);
+        if (executablePath.get() != null && !executablePath.get().isEmpty()) {
+            this.icon = getIconFromExecutablePath(executablePath.get());
+        }
     }
 
     public Application(String name, int processId, String executablePath) {
@@ -36,17 +38,8 @@ public class Application {
         this.executablePath.set(executablePath);
     }
 
-    public Application(String name, int processId, String executablePath, Image icon) {
-        this(name, processId, executablePath);
-        this.icon = icon;
-    }
-
     public String getName() {
         return name.get();
-    }
-
-    public StringProperty nameProperty() {
-        return name;
     }
 
     public int getProcessId() {
@@ -57,12 +50,97 @@ public class Application {
         return executablePath.get();
     }
 
+    private Optional<String> getExecutablePath(int processId) {
+        return ProcessHandle.of(processId)
+                .flatMap(handle -> handle.info().command());
+    }
+
     public Image getIcon() {
         return icon;
     }
 
     public void setIcon(Image icon) {
         this.icon = icon;
+    }
+
+    private Image getIconFromExecutablePath(String execPath) {
+        try {
+            File file = new File(execPath);
+            if (!file.exists()) {
+                return getDefaultIcon();
+            }
+
+            String os = System.getProperty("os.name").toLowerCase();
+
+            if (os.contains("win")) {
+                try {
+                    //logger.info("Đang thử trích xuất icon từ {} bằng phương thức khác", execPath);
+                    return extractWindowsIconUsingSwing(file);
+                } catch (Exception e) {
+                    logger.debug("Không thể trích xuất icon sử dụng phương thức nâng cao: {}", e.getMessage());
+                }
+            } else if (os.contains("mac")) {
+                String appName = file.getName();
+                if (appName.endsWith(".app")) {
+                    File iconFile = new File(file, "Contents/Resources/AppIcon.icns");
+                    if (iconFile.exists()) {
+                        try {
+                            return new Image(iconFile.toURI().toString());
+                        } catch (Exception e) {
+                            logger.debug("Không thể tải biểu tượng từ file .icns", e);
+                        }
+                    }
+                }
+            }
+
+            return getDefaultIcon();
+
+        } catch (Exception e) {
+            logger.error("Lỗi khi lấy biểu tượng từ {}: {}", execPath, e.getMessage());
+            return getDefaultIcon();
+        }
+    }
+
+    private Image extractWindowsIconUsingSwing(File file) {
+        try {
+            javax.swing.Icon icon = javax.swing.filechooser.FileSystemView.getFileSystemView().getSystemIcon(file);
+
+            if (icon != null) {
+                java.awt.image.BufferedImage bufferedImage = new java.awt.image.BufferedImage(
+                        icon.getIconWidth(), icon.getIconHeight(),
+                        java.awt.image.BufferedImage.TYPE_INT_ARGB);
+                java.awt.Graphics g = bufferedImage.createGraphics();
+                icon.paintIcon(null, g, 0, 0);
+                g.dispose();
+
+                java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+                javax.imageio.ImageIO.write(bufferedImage, "png", out);
+                out.flush();
+                java.io.ByteArrayInputStream in = new java.io.ByteArrayInputStream(out.toByteArray());
+                return new Image(in);
+            }
+        } catch (Exception e) {
+            logger.warn("Không thể trích xuất icon sử dụng Swing: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    private Image getDefaultIcon() {
+        try {
+            return new Image(Objects.requireNonNull(getClass().getResourceAsStream(DEFAULT_ICON_PATH)));
+        } catch (Exception e) {
+            logger.warn("Không thể tải biểu tượng mặc định: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    public ImageView createIconImageView(double width, double height) {
+        Image img = icon;
+        ImageView imageView = new ImageView(img);
+        imageView.setFitWidth(width);
+        imageView.setFitHeight(height);
+        imageView.setPreserveRatio(true);
+        return imageView;
     }
 
     @Override

@@ -1,6 +1,7 @@
 module com.example.promonitor {
     requires javafx.fxml;
     requires java.desktop;
+    requires javafx.web;
 
     requires org.controlsfx.controls;
     requires org.slf4j;

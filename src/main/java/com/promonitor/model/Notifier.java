@@ -204,9 +204,6 @@ public class Notifier implements IConfigurable {
             Properties properties = new Properties();
             try (FileInputStream fis = new FileInputStream(configFile)) {
                 properties.load(fis);
-
-                // Ví dụ: alertVolume = Integer.parseInt(properties.getProperty("alertVolume", "100"));
-
                 return true;
             }
         } catch (IOException e) {
@@ -219,8 +216,6 @@ public class Notifier implements IConfigurable {
     public boolean saveSettings() {
         try {
             Properties properties = new Properties();
-
-            // Ví dụ: properties.setProperty("alertVolume", String.valueOf(alertVolume));
 
             try (FileOutputStream fos = new FileOutputStream(CONFIG_FILE)) {
                 properties.store(fos, "ProMonitor Notifier Configuration");

@@ -34,7 +34,7 @@ public class ProMonitorApp extends Application {
             mainController = new MainController(currentUser);
 
             MainView mainView = new MainView(mainController);
-            Scene scene = new Scene(mainView.getRoot(), 978, 658);
+            Scene scene = new Scene(mainView.getRoot(), 1078, 658);
             scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/style.css")).toExternalForm());
 
             primaryStage.setTitle("ProMonitor - Quản lý thời gian sử dụng máy tính");
@@ -55,6 +55,8 @@ public class ProMonitorApp extends Application {
                     event.consume();
                 } else if (!mainController.confirmExit()) {
                     event.consume();
+                } else {
+                    stop();
                 }
             });
 

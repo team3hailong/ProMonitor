@@ -2,8 +2,9 @@ package com.promonitor.view;
 
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.chart.PieChart;
-import javafx.scene.control.Tooltip;
+import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -12,10 +13,13 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 
 public class DoughnutChart extends StackPane {
+    private ReportsView reportsView;
+
     private final PieChart pieChart;
     private final Text centerText;
     private final Circle innerCircle;
     private final StackPane chartCenterPane;
+    private long totalMinutes = 0;
 
     public DoughnutChart() {
         pieChart = new PieChart();
@@ -44,6 +48,10 @@ public class DoughnutChart extends StackPane {
         heightProperty().addListener((obs, oldVal, newVal) -> updateInnerCircle());
     }
 
+    public void setReportsView(ReportsView reportsView) {
+        this.reportsView = reportsView;
+    }
+
     private void updateChartCenterPosition() {
         chartCenterPane.setTranslateX(pieChart.getLayoutBounds().getMinX() + pieChart.getLayoutBounds().getWidth()/2 - chartCenterPane.getWidth()/2);
         chartCenterPane.setTranslateY(pieChart.getLayoutBounds().getMinY() + pieChart.getLayoutBounds().getHeight()/2 - chartCenterPane.getHeight()/2);
@@ -66,12 +74,14 @@ public class DoughnutChart extends StackPane {
         centerText.setText(text);
     }
 
-    public ObservableList<PieChart.Data> getData() {
-        return pieChart.getData();
-    }
-
     public void setData(ObservableList<PieChart.Data> data) {
         pieChart.setData(data);
+
+        totalMinutes = 0;
+        for (PieChart.Data d : data) {
+            totalMinutes += (long) d.getPieValue();
+        }
+
         javafx.application.Platform.runLater(() -> installTooltips(data));
     }
 
@@ -79,14 +89,12 @@ public class DoughnutChart extends StackPane {
         for (PieChart.Data d : pieChart.getData()) {
             Tooltip.uninstall(d.getNode(), null);
         }
-        //System.out.println("Installing tooltips for " + data.size() + " segments");
         for (PieChart.Data d : data) {
-            //System.out.println("  Segment: " + d.getName() + ", Node: " + (d.getNode() == null ? "NULL" : "OK"));
+            Node node = d.getNode();
             final Tooltip tooltip = new Tooltip();
             String name = d.getName();
             double value = d.getPieValue();
 
-            // Format the tooltip text
             String tooltipText = name;
             if (!name.contains("(")) {
                 tooltipText = name + " (" + formatMinutes(value) + ")";
@@ -95,18 +103,38 @@ public class DoughnutChart extends StackPane {
             tooltip.setText(tooltipText);
             tooltip.setFont(Font.font("System", FontWeight.NORMAL, 14));
 
-            Tooltip.install(d.getNode(), tooltip);
+            Tooltip.install(node, tooltip);
 
-            d.getNode().setOnMouseEntered(event -> {
-                d.getNode().setScaleX(1.15);
-                d.getNode().setScaleY(1.15);
+            node.setOnMouseClicked(event -> {
+                if (reportsView != null) {
+                    showApplicationDetailsView(d);
+                }
             });
 
-            d.getNode().setOnMouseExited(event -> {
-                d.getNode().setScaleX(1);
-                d.getNode().setScaleY(1);
+            node.setOnMouseEntered(event -> {
+                node.setScaleX(1.15);
+                node.setScaleY(1.15);
+            });
+
+            node.setOnMouseExited(event -> {
+                node.setScaleX(1);
+                node.setScaleY(1);
             });
         }
+    }
+
+
+    private void showApplicationDetailsView(PieChart.Data data) {
+        String appName = data.getName();
+        double minutes = data.getPieValue();
+
+        ApplicationDetailsView detailsView = new ApplicationDetailsView(
+                appName,
+                minutes,
+                totalMinutes
+        );
+
+        reportsView.showApplicationDetails(detailsView);
     }
 
     private String formatMinutes(double minutes) {

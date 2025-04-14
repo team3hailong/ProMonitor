@@ -81,22 +81,7 @@ public class LimitManager {
         return false;
     }
 
-    public Limit getLimit(Application application) {
-        Limit limit = limits.get(application);
-        if (limit == null) {
-            for (Map.Entry<Object, Limit> entry : limits.entrySet()) {
-                if (entry.getKey() instanceof Application app && 
-                    app.getName().equals(application.getName())) {
-                    limit = entry.getValue();
-                    break;
-                }
-            }
-        }
-        
-        return limit;
-    }
-
-    public Limit getLimit(ApplicationGroup group) {
+    public Limit getLimit(Object group) {
         return limits.get(group);
     }
 

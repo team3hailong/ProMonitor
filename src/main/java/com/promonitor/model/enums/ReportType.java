@@ -1,9 +1,9 @@
 package com.promonitor.model.enums;
 
 public enum ReportType {
-    DAILY("Báo cáo hàng ngày"),
-    WEEKLY("Báo cáo hàng tuần"),
-    MONTHLY("Báo cáo hàng tháng"),
+    DAILY("Báo cáo hôm nay"),
+    WEEKLY("Báo cáo 7 ngày"),
+    MONTHLY("Báo cáo 30 ngày"),
     CUSTOM("Báo cáo tùy chỉnh");
 
     private final String displayName;

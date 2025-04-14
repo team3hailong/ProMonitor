@@ -4,6 +4,7 @@ import com.promonitor.controller.MainController;
 import com.promonitor.model.Application;
 import com.promonitor.model.Limit;
 import com.promonitor.model.TimeTracker;
+import com.promonitor.util.AlertHelper;
 import com.promonitor.util.DataStorage;
 
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
@@ -18,14 +19,12 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 public class ApplicationsView {
     private final MainController controller;
@@ -96,7 +95,6 @@ public class ApplicationsView {
         searchPane.getChildren().addAll(searchField, searchIcon);
 
         Label filterLabel = new Label("Hiển thị:");
-        filterLabel.getStyleClass().add("filter-label");
 
         ComboBox<String> filterCombo = new ComboBox<>(
                 FXCollections.observableArrayList("Tất cả ứng dụng", "Có giới hạn", "Không giới hạn")
@@ -155,12 +153,10 @@ public class ApplicationsView {
     }
 
     private VBox createStatsCard(FontAwesomeIcon iconType, String titleText, Label statLabel, String... additionalLabelClasses) {
-        // Tạo container của thẻ stats
         VBox card = new VBox(5);
         card.getStyleClass().add("stats-card");
         card.setPrefWidth(200);
 
-        // Tạo header chứa icon và tiêu đề
         HBox header = new HBox(8);
         header.setAlignment(Pos.CENTER_LEFT);
 
@@ -173,13 +169,11 @@ public class ApplicationsView {
 
         header.getChildren().addAll(iconView, title);
 
-        // Thêm các style phụ cho label nếu cần
         statLabel.getStyleClass().add("stats-value");
         if (additionalLabelClasses != null && additionalLabelClasses.length > 0) {
             statLabel.getStyleClass().addAll(additionalLabelClasses);
         }
 
-        // Ghép header và label vào thẻ stats
         card.getChildren().addAll(header, statLabel);
 
         return card;
@@ -216,16 +210,7 @@ public class ApplicationsView {
                     setText(null);
                     setGraphic(null);
                 } else {
-                    HBox hbox = new HBox(10);
-                    hbox.setAlignment(Pos.CENTER_LEFT);
-
-                    FontAwesomeIconView appIcon = new FontAwesomeIconView(FontAwesomeIcon.WINDOW_MAXIMIZE);
-                    appIcon.setGlyphSize(14);
-                    appIcon.setFill(Color.valueOf("#4a6bff"));
-
-                    Label nameLabel = new Label(item);
-
-                    hbox.getChildren().addAll(appIcon, nameLabel);
+                    HBox hbox = dataStorage.applicationBox(item);
                     setGraphic(hbox);
                     setText(null);
                 }
@@ -256,7 +241,6 @@ public class ApplicationsView {
 
                     Label timeLabel = new Label(item);
 
-                    // Color coding based on usage time
                     if (getTableRow() != null && getTableRow().getItem() != null) {
                         DataStorage.AppUsageData data = getTableRow().getItem();
                         long hours = data.getUsageTimeMillis() / (1000 * 60 * 60);
@@ -321,22 +305,22 @@ public class ApplicationsView {
 
                 setLimitBtn.setOnAction(event -> {
                     DataStorage.AppUsageData data = getTableView().getItems().get(getIndex());
-                    if(!data.getLimitInfo().equals("Không giới hạn")) {
+                    if (!data.getLimitInfo().equals("Không giới hạn")) {
                         LimitsView.LimitInfo limitInfo = new LimitsView.LimitInfo(
-                                data.getApplication(),
-                                data.getApplication().getName(),
-                                "Ứng dụng",
-                                data.getLimitInfo(),
-                                null
+                            data.getApplication(),
+                            data.getApplication().getName(),
+                            "Ứng dụng",
+                            data.getLimitInfo(),
+                            null
                         );
                         limitsView.editLimit(limitInfo);
-                    }
-                    else {
-                        limitsView.createNewLimit();
+                    } else {
+                        LimitCreationDialog dialog = new LimitCreationDialog(controller, false, data.getApplication());
+                        dialog.showAndWait();
+                        limitsView.loadLimits();
                     }
                 });
 
-                // View details button
                 viewDetailsBtn.getStyleClass().add("action-button-small");
 
                 FontAwesomeIconView detailsIcon = new FontAwesomeIconView(FontAwesomeIcon.INFO_CIRCLE);
@@ -376,7 +360,6 @@ public class ApplicationsView {
 
         appsTable.getColumns().addAll(nameCol, pidCol, timeCol, limitCol, actionCol);
 
-        // Set up filtered and sorted data
         filteredData = new FilteredList<>(masterData, p -> true);
         SortedList<DataStorage.AppUsageData> sortedData = new SortedList<>(filteredData);
         sortedData.comparatorProperty().bind(appsTable.comparatorProperty());
@@ -386,64 +369,99 @@ public class ApplicationsView {
     }
 
     private void showAppDetails(DataStorage.AppUsageData data) {
-        // Create a dialog to show app details
         Dialog<Void> dialog = new Dialog<>();
+        dialog.getDialogPane().getStylesheets().add(
+                Objects.requireNonNull(AlertHelper.class.getResource("/css/dialog.css")).toExternalForm());
         dialog.setTitle("Chi tiết ứng dụng");
-        dialog.setHeaderText("Chi tiết về " + data.getName());
+        dialog.getDialogPane().getStyleClass().add("dialog");
 
-        // Set the button types
+        dialog.setHeaderText(null);
+
         ButtonType closeButtonType = new ButtonType("Đóng", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().add(closeButtonType);
 
-        // Create content
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20, 150, 10, 10));
+        VBox contentBox = new VBox(15);
+        contentBox.getStyleClass().add("form");
+        contentBox.setPadding(new Insets(25));
+        contentBox.setMinWidth(500);
 
-        FontAwesomeIconView appIcon = new FontAwesomeIconView(FontAwesomeIcon.WINDOW_MAXIMIZE);
-        appIcon.setGlyphSize(48);
-        appIcon.setFill(Color.valueOf("#4a6bff"));
+        HBox headerBox = new HBox(15);
+        headerBox.setAlignment(Pos.CENTER_LEFT);
+
+        ImageView appIcon = data.getApplication().createIconImageView(40, 40);
         StackPane iconPane = new StackPane(appIcon);
+        iconPane.setMinSize(48, 48);
+        iconPane.setMaxSize(48, 48);
+        iconPane.getStyleClass().add("app-icon-container");
 
-        Label nameLabel = new Label("Tên ứng dụng:");
+        VBox titleBox = new VBox(5);
+        Label titleLabel = new Label("Chi tiết về");
+        titleLabel.getStyleClass().add("dialog-subtitle");
+
         Label nameValue = new Label(data.getName());
-        nameValue.setStyle("-fx-font-weight: bold;");
+        nameValue.getStyleClass().add("dialog-header");
 
-        Label pidLabel = new Label("Mã tiến trình (PID):");
-        Label pidValue = new Label(String.valueOf(data.getProcessId()));
+        titleBox.getChildren().addAll(titleLabel, nameValue);
 
-        Label pathLabel = new Label("Đường dẫn:");
-        Label pathValue = new Label(data.getExecutablePath());
-        pathValue.setWrapText(true);
+        headerBox.getChildren().addAll(iconPane, titleBox);
 
-        Label timeLabel = new Label("Thời gian sử dụng:");
-        Label timeValue = new Label(data.getUsageTime());
+        Separator separator = new Separator();
 
-        Label limitLabel = new Label("Giới hạn:");
-        Label limitValue = new Label(data.getLimitInfo());
+        GridPane grid = new GridPane();
+        grid.getStyleClass().add("form-grid");
+        grid.setHgap(20);
+        grid.setVgap(15);
+        grid.setPadding(new Insets(10, 0, 10, 0));
 
-        Label dateLabel = new Label("Ngày theo dõi:");
-        Label dateValue = new Label(data.getDate());
+        ColumnConstraints column1 = new ColumnConstraints();
+        column1.setMinWidth(150);
+        column1.setPrefWidth(150);
 
-        grid.add(iconPane, 0, 0, 2, 1);
-        grid.add(nameLabel, 0, 1);
-        grid.add(nameValue, 1, 1);
-        grid.add(pidLabel, 0, 2);
-        grid.add(pidValue, 1, 2);
-        grid.add(pathLabel, 0, 3);
-        grid.add(pathValue, 1, 3);
-        grid.add(timeLabel, 0, 4);
-        grid.add(timeValue, 1, 4);
-        grid.add(limitLabel, 0, 5);
-        grid.add(limitValue, 1, 5);
-        grid.add(dateLabel, 0, 6);
-        grid.add(dateValue, 1, 6);
+        ColumnConstraints column2 = new ColumnConstraints();
+        column2.setHgrow(Priority.ALWAYS);
+        column2.setFillWidth(true);
 
-        dialog.getDialogPane().setContent(grid);
+        grid.getColumnConstraints().addAll(column1, column2);
 
-        // Show the dialog
+        int row = 0;
+
+        addDetailRow(grid, "Mã tiến trình:", String.valueOf(data.getProcessId()), row++);
+
+        addDetailRow(grid, "Đường dẫn:", data.getExecutablePath(), row++);
+        Label pathValue = (Label) grid.getChildren().get(grid.getChildren().size() - 1);
+        pathValue.getStyleClass().add("path-value");
+
+        addDetailRow(grid, "Thời gian sử dụng:", data.getUsageTime(), row++);
+        Label usageTimeValue = (Label) grid.getChildren().get(grid.getChildren().size() - 1);
+        usageTimeValue.getStyleClass().add("usage-time-value");
+
+        if (data.getLimitInfo() != null && !data.getLimitInfo().isEmpty()) {
+            addDetailRow(grid, "Giới hạn:", data.getLimitInfo(), row);
+            Label limitValue = (Label) grid.getChildren().get(grid.getChildren().size() - 1);
+            limitValue.getStyleClass().add("limit-value");
+        }
+
+        Button closeButton = (Button) dialog.getDialogPane().lookupButton(closeButtonType);
+        closeButton.getStyleClass().add("cancel-button");
+        closeButton.setText("Đóng");
+        closeButton.setPrefWidth(100);
+
+        contentBox.getChildren().addAll(headerBox, separator, grid);
+        dialog.getDialogPane().setContent(contentBox);
+
         dialog.showAndWait();
+    }
+
+    private void addDetailRow(GridPane grid, String labelText, String valueText, int row) {
+        Label label = new Label(labelText);
+        label.getStyleClass().add("detail-label");
+
+        Label value = new Label(valueText);
+        value.getStyleClass().add("detail-value");
+        value.setWrapText(true);
+
+        grid.add(label, 0, row);
+        grid.add(value, 1, row);
     }
 
     public void updateData() {

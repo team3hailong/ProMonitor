@@ -132,11 +132,11 @@ public class Monitor implements IReportable {
 
             int processId = getProcessId(activeWindow);
             String windowTitle = getWindowTitle(activeWindow);
-            Application currentApp = new Application(windowTitle.isEmpty() ? "Unknown" : windowTitle, processId, "");
+            Application currentApp = new Application(windowTitle.isEmpty() ? "Unknown" : windowTitle, processId);
 
-            String currentAppId = currentApp.getUniqueId();
-            if (!currentAppId.equals(activeWindowId)) {
-                switchActiveWindow(currentApp, currentAppId);
+            String currentAppName = currentApp.getName();
+            if (!currentAppName.equals(activeWindowId)) {
+                switchActiveWindow(currentApp);
             }
 
             lastUpdateTime = LocalDateTime.now();
@@ -180,17 +180,18 @@ public class Monitor implements IReportable {
         return Native.toString(windowText).trim();
     }
 
-    private void switchActiveWindow(Application currentApp, String currentAppId) {
+    private void switchActiveWindow(Application currentApp) {
         if (activeWindowId != null && timeTrackers.containsKey(activeWindowId)) {
             timeTrackers.get(activeWindowId).stopTracking();
         }
 
-        activeWindowId = currentAppId;
+        String currentAppName = currentApp.getName();
+        activeWindowId = currentAppName;
         activeApplication = currentApp;
 
-        timeTrackers.computeIfAbsent(currentAppId, k -> {
+        timeTrackers.computeIfAbsent(currentAppName, k -> {
             TimeTracker newTracker = new TimeTracker(currentApp);
-            DataStorage.AppUsageData savedData = savedAppData.get(currentAppId);
+            DataStorage.AppUsageData savedData = savedAppData.get(currentAppName);
             if (savedData != null) {
                 newTracker.addSavedTime(Duration.ofMillis(savedData.getUsageTimeMillis()));
                 logger.debug("Sử dụng dữ liệu đã lưu cho ứng dụng {}: {} giây", currentApp.getName(), savedData.getUsageTimeMillis() / 1000);
@@ -208,7 +209,7 @@ public class Monitor implements IReportable {
 
         try {
             updateGroupUsage();
-            TimeTracker tracker = timeTrackers.get(activeApplication.getUniqueId());
+            TimeTracker tracker = timeTrackers.get(activeApplication.getName());
             if (tracker == null) {
                 return;
             }
@@ -318,7 +319,7 @@ public class Monitor implements IReportable {
                         " sẽ đạt đến giới hạn trong " +
                         (remaining.toMinutes() > 0 ? remaining.toMinutes() + " phút" : remaining.getSeconds() + " giây");
 
-                notifier.notify(message, "Bạn ơi đừng nghiện nữa", userSettings.getNotificationType());
+                notifier.notify(message, "Cảnh báo sắp đạt giới hạn", userSettings.getNotificationType());
                 logger.info("Đã hiển thị cảnh báo giới hạn cho {}: còn {} giây", app.getName(), remaining.getSeconds());
             }
         }

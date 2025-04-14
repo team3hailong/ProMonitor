@@ -27,11 +27,19 @@ public class ReportsView {
     private DoughnutChart usageChart;
     private TextArea reportTextArea;
 
+    private StackPane leftContentArea;
+    private StackPane rightContentArea;
+
+    private VBox leftEmptyState;
+    private VBox rightEmptyState;
+
+    private Node leftReportState;
+    private Node rightReportState;
+
     public ReportsView(MainController controller) {
         this.controller = controller;
         createContent();
     }
-
 
     private void createContent() {
         content = new BorderPane();
@@ -113,16 +121,16 @@ public class ReportsView {
 
         // Date range with more compact layout
         FontAwesomeIconView calendarIcon = new FontAwesomeIconView(FontAwesomeIcon.CALENDAR);
-        calendarIcon.setGlyphSize(14); // Smaller icon
+        calendarIcon.setGlyphSize(14);
         calendarIcon.setFill(Color.valueOf("#5a6978"));
 
         Label startDateLabel = new Label("Từ:");
         DatePicker startDatePicker = new DatePicker(LocalDate.now().minusDays(7));
-        startDatePicker.setPrefWidth(120); // Reduced width
+        startDatePicker.setPrefWidth(120);
 
         Label endDateLabel = new Label("Đến:");
         DatePicker endDatePicker = new DatePicker(LocalDate.now());
-        endDatePicker.setPrefWidth(120); // Reduced width
+        endDatePicker.setPrefWidth(120);
 
         HBox dateBox = new HBox(5, calendarIcon, startDateLabel, startDatePicker, endDateLabel, endDatePicker);
         dateBox.setAlignment(Pos.CENTER_LEFT);
@@ -131,7 +139,6 @@ public class ReportsView {
         reportTypeCombo.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldVal, newVal) -> dateBox.setVisible(newVal == ReportType.CUSTOM));
 
-        // Generate button with icon only to save space
         FontAwesomeIconView generateIcon = new FontAwesomeIconView(FontAwesomeIcon.REFRESH);
         generateIcon.setGlyphSize(14);
         generateIcon.setFill(Color.WHITE);
@@ -141,7 +148,7 @@ public class ReportsView {
         generateBtn.setGraphic(generateIcon);
         generateBtn.setTooltip(new Tooltip("Tạo báo cáo"));
         generateBtn.getStyleClass().add("button");
-        generateBtn.setPrefSize(36, 36); // Square button for a more compact look
+        generateBtn.setPrefSize(36, 36);
         generateBtn.setOnAction(e -> {
             ReportType selectedType = reportTypeCombo.getSelectionModel().getSelectedItem();
 
@@ -167,13 +174,26 @@ public class ReportsView {
 
     private SplitPane createReportDisplayPane() {
         SplitPane splitPane = new SplitPane();
-        splitPane.setOrientation(javafx.geometry.Orientation.HORIZONTAL); // Ensure horizontal split
+        splitPane.setOrientation(javafx.geometry.Orientation.HORIZONTAL);
 
-        VBox chartContainer = new VBox(15);
-        chartContainer.setPadding(new Insets(10));
-        chartContainer.getStyleClass().add("left-pane");
-        chartContainer.setMaxHeight(400);
-        VBox.setVgrow(chartContainer, Priority.ALWAYS);
+        VBox leftPane = createLeftPane();
+
+        VBox rightPane = createRightPane();
+
+        showEmptyState();
+
+        splitPane.getItems().addAll(leftPane, rightPane);
+        splitPane.setDividerPositions(0.4);
+
+        return splitPane;
+    }
+
+    private VBox createLeftPane() {
+        VBox leftPane = new VBox(15);
+        leftPane.setPadding(new Insets(10));
+        leftPane.getStyleClass().add("left-pane");
+        leftPane.setMaxHeight(400);
+        VBox.setVgrow(leftPane, Priority.ALWAYS);
 
         HBox chartHeaderBox = new HBox(5);
         chartHeaderBox.setAlignment(Pos.CENTER_LEFT);
@@ -185,19 +205,39 @@ public class ReportsView {
 
         Label chartLabel = new Label("Biểu đồ sử dụng");
         chartLabel.getStyleClass().add("section-header");
-
         chartHeaderBox.getChildren().addAll(chartIcon, chartLabel);
 
+        leftContentArea = new StackPane();
+        VBox.setVgrow(leftContentArea, Priority.ALWAYS);
+
+        leftEmptyState = new VBox();
+        leftEmptyState.setAlignment(Pos.CENTER);
+        leftEmptyState.setSpacing(15);
+
+        FontAwesomeIconView emptyChartIcon = new FontAwesomeIconView(FontAwesomeIcon.PIE_CHART);
+        emptyChartIcon.setGlyphSize(40);
+        emptyChartIcon.setFill(Color.valueOf("#cccccc"));
+
+        Label emptyChartDesc = new Label("Vui lòng tạo báo cáo để xem biểu đồ thống kê");
+        emptyChartDesc.getStyleClass().add("empty-state-desc");
+
+        leftEmptyState.getChildren().addAll(emptyChartIcon, emptyChartDesc);
+
         usageChart = new DoughnutChart();
-        VBox.setVgrow(usageChart, Priority.ALWAYS);
+        leftReportState = usageChart;
 
-        chartContainer.getChildren().addAll(chartHeaderBox, usageChart);
+        usageChart.setReportsView(this);
+        leftPane.getChildren().addAll(chartHeaderBox, leftContentArea);
 
-        VBox detailsContainer = new VBox(15);
-        detailsContainer.setPadding(new Insets(10));
-        detailsContainer.getStyleClass().add("right-pane");
-        detailsContainer.setMaxHeight(400);
-        VBox.setVgrow(detailsContainer, Priority.ALWAYS);
+        return leftPane;
+    }
+
+    private VBox createRightPane() {
+        VBox rightPane = new VBox(15);
+        rightPane.setPadding(new Insets(10));
+        rightPane.getStyleClass().add("right-pane");
+        rightPane.setMaxHeight(400);
+        VBox.setVgrow(rightPane, Priority.ALWAYS);
 
         HBox detailsHeaderBox = new HBox(5);
         detailsHeaderBox.setAlignment(Pos.CENTER_LEFT);
@@ -211,6 +251,25 @@ public class ReportsView {
         detailsLabel.getStyleClass().add("section-header");
 
         detailsHeaderBox.getChildren().addAll(detailsIcon, detailsLabel);
+
+        rightContentArea = new StackPane();
+        VBox.setVgrow(rightContentArea, Priority.ALWAYS);
+
+        rightEmptyState = new VBox();
+        rightEmptyState.setAlignment(Pos.CENTER);
+        rightEmptyState.setSpacing(15);
+
+        FontAwesomeIconView emptyDetailsIcon = new FontAwesomeIconView(FontAwesomeIcon.FILE_TEXT_ALT);
+        emptyDetailsIcon.setGlyphSize(40);
+        emptyDetailsIcon.setFill(Color.valueOf("#cccccc"));
+
+        Label emptyDetailsDesc = new Label("Vui lòng tạo báo cáo để xem chi tiết thống kê");
+        emptyDetailsDesc.getStyleClass().add("empty-state-desc");
+
+        rightEmptyState.getChildren().addAll(emptyDetailsIcon, emptyDetailsDesc);
+
+        VBox reportDetailsContainer = new VBox(10);
+        VBox.setVgrow(reportDetailsContainer, Priority.ALWAYS);
 
         BorderPane textContainer = new BorderPane();
         textContainer.getStyleClass().add("text-container");
@@ -235,12 +294,33 @@ public class ReportsView {
 
         exportBox.getChildren().addAll(exportPDFBtn, exportCSVBtn);
 
-        detailsContainer.getChildren().addAll(detailsHeaderBox, textContainer, exportBox);
+        reportDetailsContainer.getChildren().addAll(textContainer, exportBox);
+        rightReportState = reportDetailsContainer;
 
-        splitPane.getItems().addAll(chartContainer, detailsContainer);
-        splitPane.setDividerPositions(0.4);
+        rightPane.getChildren().addAll(detailsHeaderBox, rightContentArea);
 
-        return splitPane;
+        return rightPane;
+    }
+
+    public void showApplicationDetails(ApplicationDetailsView detailsView) {
+        rightContentArea.getChildren().clear();
+        rightContentArea.getChildren().add(detailsView);
+    }
+
+    private void showEmptyState() {
+        leftContentArea.getChildren().clear();
+        rightContentArea.getChildren().clear();
+
+        leftContentArea.getChildren().add(leftEmptyState);
+        rightContentArea.getChildren().add(rightEmptyState);
+    }
+
+    private void showReportState() {
+        leftContentArea.getChildren().clear();
+        rightContentArea.getChildren().clear();
+
+        leftContentArea.getChildren().add(leftReportState);
+        rightContentArea.getChildren().add(rightReportState);
     }
 
     private Button createExportButton(String text, FontAwesomeIcon icon, Color color) {
@@ -264,6 +344,7 @@ public class ReportsView {
             return;
         }
 
+        showReportState();
         usageChart.setData(currentReport.generateChartData());
 
         StringBuilder reportText = new StringBuilder();

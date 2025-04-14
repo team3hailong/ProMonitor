@@ -1,6 +1,6 @@
 package com.promonitor.util;
 
-import javafx.animation.FadeTransition;
+import javafx.animation.Interpolator;
 import javafx.animation.PauseTransition;
 import javafx.animation.TranslateTransition;
 import javafx.geometry.Insets;
@@ -24,7 +24,7 @@ public class AlertHelper {
     public static boolean createConfirmationContent(Label headerLabel, Label messageLabel) {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.getDialogPane().getStylesheets().add(
-                Objects.requireNonNull(AlertHelper.class.getResource("/css/limit-dialog.css")).toExternalForm());
+                Objects.requireNonNull(AlertHelper.class.getResource("/css/dialog.css")).toExternalForm());
         dialog.setTitle("Xác nhận xóa");
 
         ButtonType deleteButton = new ButtonType("Xóa", ButtonBar.ButtonData.OK_DONE);
@@ -48,18 +48,18 @@ public class AlertHelper {
         warningIcon.setGlyphSize(48);
         warningIcon.setFill(Color.valueOf("#f39c12"));
 
-        DropShadow iconShadow = new DropShadow(10, Color.color(0, 0, 0, 0.2));
+        DropShadow iconShadow = new DropShadow(5, Color.color(0, 0, 0, 0.2));
         warningIcon.setEffect(iconShadow);
 
-        headerLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+        headerLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50; -fx-text-alignment: center;");
         headerLabel.setAlignment(Pos.CENTER);
-        headerLabel.setPadding(new Insets(15, 0, 5, 0));
+        headerLabel.setPadding(new Insets(10, 0, 5, 0));
 
         Rectangle separator = new Rectangle(380, 1);
         separator.setFill(Color.valueOf("#ecf0f1"));
         separator.setOpacity(0.7);
 
-        messageLabel.setStyle("-fx-font-size: 15px; -fx-text-fill: #34495e;");
+        messageLabel.setStyle("-fx-font-size: 15px; -fx-text-fill: #34495e; -fx-text-alignment: center;");
         messageLabel.setAlignment(Pos.CENTER);
         messageLabel.setWrapText(true);
         messageLabel.setPadding(new Insets(15, 10, 15, 10));
@@ -83,11 +83,13 @@ public class AlertHelper {
         Pane root = findRootPane(parentNode.getScene());
         if (root == null) return;
 
-        HBox toast = new HBox(15);
-        toast.setPadding(new Insets(15, 25, 15, 25));
-        toast.setStyle("-fx-background-color: white; -fx-background-radius: 5px; " +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.26), 10, 0.12, -1, 2);");
-        toast.setAlignment(Pos.CENTER_LEFT);
+        HBox toastContent = new HBox(10); // Giảm khoảng cách giữa các phần tử
+        toastContent.setPadding(new Insets(10, 15, 10, 15)); // Giảm padding để toast nhỏ gọn hơn
+        toastContent.setPrefWidth(Region.USE_COMPUTED_SIZE);
+        toastContent.setMaxWidth(Double.MAX_VALUE);
+
+        toastContent.setStyle("-fx-background-color: white; -fx-background-radius: 5; -fx-opacity: 1.0; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 0);");
+        toastContent.setAlignment(Pos.CENTER_LEFT);
 
         FontAwesomeIcon icon;
         Color color = switch (type) {
@@ -109,48 +111,46 @@ public class AlertHelper {
             }
         };
         FontAwesomeIconView iconView = new FontAwesomeIconView(icon);
-        iconView.setGlyphSize(100);
+        iconView.setGlyphSize(18); // Giảm kích thước icon một chút
         iconView.setFill(color);
 
-//        Label messageLabel = new Label(message);
-//        messageLabel.setStyle("-fx-text-fill: #444; -fx-font-size: 10px;");
-//        messageLabel.setWrapText(true);
-//        messageLabel.setPrefWidth(400);
-//        messageLabel.setMinWidth(Region.USE_COMPUTED_SIZE);
-//        HBox.setHgrow(messageLabel, Priority.ALWAYS);
-//        messageLabel.setTextOverrun(OverrunStyle.CLIP);
+        Label messageLabel = new Label(message);
+        messageLabel.setStyle("-fx-text-fill: #444; -fx-font-size: 12px;"); // Font size giảm nhẹ
+        messageLabel.setWrapText(true);
+        messageLabel.setMaxWidth(Double.MAX_VALUE);
+        messageLabel.setMinWidth(Region.USE_PREF_SIZE);
+        HBox.setHgrow(messageLabel, Priority.ALWAYS);
 
-        toast.getChildren().addAll(iconView);
+        toastContent.getChildren().addAll(iconView, messageLabel);
 
-        root.getChildren().add(toast);
+        StackPane toastContainer = new StackPane();
+        toastContainer.getChildren().add(toastContent);
+
+        int navBarWidth = 0;
         if (root instanceof StackPane) {
-            StackPane.setAlignment(toast, Pos.BOTTOM_CENTER);
-            StackPane.setMargin(toast, new Insets(0, 0, 30, 0));
+            StackPane.setAlignment(toastContainer, Pos.TOP_CENTER);
+            toastContainer.setTranslateX((double) navBarWidth / 2);
+            StackPane.setMargin(toastContainer, new Insets(90, 0, 0, 0));
         } else {
-            toast.setLayoutX((root.getWidth() - toast.getMaxWidth()) / 2);
-            toast.setLayoutY(root.getHeight() - 100);
+            toastContainer.setLayoutX((root.getWidth() - toastContainer.getMaxWidth()) / 2);
+            toastContainer.setLayoutY(90);
         }
 
-        toast.setOpacity(0);
-        toast.setTranslateY(20);
+        root.getChildren().add(toastContainer);
 
-        FadeTransition fadeIn = new FadeTransition(Duration.millis(200), toast);
-        fadeIn.setToValue(1);
-        fadeIn.play();
-
-        TranslateTransition slideIn = new TranslateTransition(Duration.millis(200), toast);
+        TranslateTransition slideIn = new TranslateTransition(Duration.millis(500), toastContainer);
+        slideIn.setFromY(-50);
         slideIn.setToY(0);
+        slideIn.setInterpolator(Interpolator.EASE_OUT);
         slideIn.play();
 
-        PauseTransition delay = new PauseTransition(Duration.seconds(4));
+        PauseTransition delay = new PauseTransition(Duration.seconds(3));
         delay.setOnFinished(e -> {
-            FadeTransition fadeOut = new FadeTransition(Duration.millis(300), toast);
-            fadeOut.setToValue(0);
-            fadeOut.setOnFinished(evt -> root.getChildren().remove(toast));
-            fadeOut.play();
-
-            TranslateTransition slideOut = new TranslateTransition(Duration.millis(300), toast);
-            slideOut.setToY(20);
+            TranslateTransition slideOut = new TranslateTransition(Duration.millis(500), toastContainer);
+            slideOut.setFromY(0);
+            slideOut.setToY(-50);
+            slideOut.setInterpolator(Interpolator.EASE_IN);
+            slideOut.setOnFinished(ev -> root.getChildren().remove(toastContainer));
             slideOut.play();
         });
         delay.play();

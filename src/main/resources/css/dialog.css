@@ -1,18 +1,23 @@
-/* Modern styling for limit creation dialog */
-
-.limit-creation-dialog {
+.dialog {
     -fx-background-color: #f8f9fa;
 }
 
 .dialog-header {
     -fx-font-size: 18px;
-    -fx-padding: 10px 0;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+    -fx-padding: 0;
 }
 
-.limit-form {
+.dialog-subtitle {
+    -fx-font-size: 14px;
+    -fx-text-fill: #7f8c8d;
+}
+
+.form {
     -fx-background-color: white;
-    -fx-background-radius: 6px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 2);
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 4);
 }
 
 .form-grid {
@@ -104,6 +109,7 @@
     -fx-cursor: hand;
 }
 
+
 .delete-button {
     -fx-background-color: #e74c3c;
     -fx-text-fill: white;
@@ -117,33 +123,66 @@
     -fx-cursor: hand;
 }
 
-
-.modern-separator {
-    -fx-background-color: #ecf0f1;
-    -fx-opacity: 0.8;
-}
-
 .combo-box-styled:hover,
 .time-field:hover {
     -fx-border-color: #bdc3c7;
     -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 3, 0, 0, 0);
 }
 
-.toast-container {
-    -fx-background-color: white;
-    -fx-background-radius: 10px;
-    -fx-border-radius: 10px;
+/* New styles for app details dialog */
+.app-icon-container {
+    -fx-background-color: #f8f9fa;
+    -fx-background-radius: 6px;
+    -fx-padding: 4px;
+    -fx-border-color: #e9ecef;
+    -fx-border-radius: 6px;
     -fx-border-width: 1px;
-    -fx-border-color: #ecf0f1;
 }
 
-.toast-title {
-    -fx-font-size: 15px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #2c3e50;
+.detail-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: #6c757d;
+    -fx-font-weight: normal;
 }
 
-.toast-message {
+.detail-value {
+    -fx-font-size: 14px;
+    -fx-text-fill: #212529;
+    -fx-font-weight: normal;
+}
+
+.path-value {
+    -fx-font-family: "Consolas", "Monaco", monospace;
     -fx-font-size: 13px;
-    -fx-text-fill: #34495e;
+    -fx-background-color: #f8f9fa;
+    -fx-background-radius: 4px;
+    -fx-padding: 5px 8px;
+    -fx-border-color: #e9ecef;
+    -fx-border-radius: 4px;
+    -fx-border-width: 1px;
+}
+
+.limit-value {
+    -fx-font-size: 12px;
+    -fx-text-fill: #6c757d;
+}
+
+.date-value {
+    -fx-font-weight: 500;
+}
+
+.usage-progress {
+    -fx-pref-height: 8px;
+}
+
+.usage-progress > .bar {
+    -fx-background-color: linear-gradient(to right, #3498db, #2980b9);
+    -fx-background-insets: 0;
+    -fx-background-radius: 4px;
+}
+
+.usage-progress > .track {
+    -fx-background-color: #ecf0f1;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4px;
 }

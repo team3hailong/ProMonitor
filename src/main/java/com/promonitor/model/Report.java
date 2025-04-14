@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import javafx.collections.FXCollections;
@@ -116,6 +117,7 @@ public class Report implements IReportable {
         List<Map<String, Object>> appUsage = (List<Map<String, Object>>) reportData.get("appUsageData");
 
         long totalMinutes = (Long) reportData.get("totalUsageMinutes");
+        long averageMinutes = (Long) reportData.get("totalUsageMinutes")/calculateDaysBetween(startDate, endDate);
 
         List<Map<String, Object>> topApps = appUsage.stream()
                 .sorted((a, b) -> Long.compare((Long)b.get("usageMinutes"), (Long)a.get("usageMinutes")))
@@ -129,8 +131,8 @@ public class Report implements IReportable {
             double percentage = (double) minutes / totalMinutes * 100;
 
             if (percentage > 50) {
-                suggestions.add("Bạn dành hơn " + String.format("%.1f", percentage) +
-                        "% thời gian của mình cho " + appName + ". Hãy cân nhắc đa dạng hóa hoạt động của bạn.");
+                suggestions.add("Bạn dành hơn " + String.format("%.1f", percentage) + "% thời gian cho " + appName + ".");
+                suggestions.add("Hãy cân nhắc đa dạng hóa hoạt động của bạn.");
             }
 
             if (topApps.size() >= 2) {
@@ -138,29 +140,26 @@ public class Report implements IReportable {
                 long secondAppMinutes = (Long) secondApp.get("usageMinutes");
 
                 if (minutes > secondAppMinutes * 3) {
-                    suggestions.add("Thời gian sử dụng " + appName + " cao hơn nhiều so với các ứng dụng khác. " +
-                            "Điều này có thể ảnh hưởng đến sự cân bằng hoạt động của bạn.");
+                    suggestions.add("Thời gian sử dụng " + appName + " cao hơn nhiều so với các ứng dụng khác.");
+                    suggestions.add("Hãy cân bằng các hoạt động của bạn.");
                 }
             }
         }
 
-        if (totalMinutes > 240) {
-            suggestions.add("Thời gian sử dụng máy tính hàng ngày của bạn vượt quá 4 giờ. Hãy nhớ nghỉ ngơi định kỳ.");
+        if (averageMinutes > 240) {
+            suggestions.add("Thời gian sử dụng máy tính hàng ngày của bạn vượt quá 4 giờ.");
+            suggestions.add("Hãy nhớ nghỉ ngơi định kỳ để bảo vệ sức khỏe.");
         }
 
-        if (totalMinutes > 120) {
-            suggestions.add("Nên tránh sử dụng máy tính liên tục quá 2 giờ. Hãy nghỉ ngơi ít nhất 15 phút giữa các phiên làm việc.");
-
+        if (averageMinutes > 120) {
+            suggestions.add("Nên tránh sử dụng máy tính liên tục quá 2 giờ.");
+            suggestions.add("Hãy nghỉ ngơi ít nhất 15 phút giữa các phiên làm việc.");
         }
+
         if(!suggestions.isEmpty()) {
             suggestions.add("Danh sách các quy tắc nên được áp dụng:");
-            suggestions.add("Quy tắc 20-20-20: Cứ mỗi 20 phút, nhìn vào một vật ở khoảng cách 20 feet trong 20 giây.");
-            suggestions.add("Quy tắc 70-30: 70% cho công việc/học tập, 30% cho giải trí.");
-        }
-
-        if (suggestions.isEmpty()) {
-            suggestions.add("Thời gian sử dụng máy tính của bạn có vẻ cân đối. Tốt lắm!");
-            suggestions.add("Hãy tiếp tục theo dõi các mẫu sử dụng của bạn để đạt hiệu suất tối ưu.");
+            suggestions.add("+ Quy tắc 20-20-20: Cứ mỗi 20 phút, nhìn vào một vật ở khoảng cách 20 feet trong 20 giây.");
+            suggestions.add("+ Quy tắc 70-30: 70% thời gian cho công việc/học tập,  30% thời gian cho giải trí.");
         }
 
         return suggestions;
@@ -392,8 +391,19 @@ public class Report implements IReportable {
             for (String suggestion : suggestions) {
                 contentStream.beginText();
                 contentStream.setFont(normalFont, 10);
-                contentStream.newLineAtOffset(70, y);
-                contentStream.showText("• " + suggestion);
+                
+                if (suggestion.startsWith("+")) {
+                    contentStream.newLineAtOffset(90, y);
+                    contentStream.showText(suggestion);
+                } else {
+                    contentStream.newLineAtOffset(70, y);
+                    if(suggestion.startsWith("Hãy")) {
+                        contentStream.showText(suggestion);
+                    } else {
+                        contentStream.showText("• " + suggestion);
+                    }
+                }
+                
                 contentStream.endText();
                 y -= 20;
 
@@ -453,12 +463,27 @@ public class Report implements IReportable {
         return reportType;
     }
 
-    public LocalDate getStartDate() {
-        return startDate;
+    public String getStartDate() {
+        return formatDate(startDate);
     }
 
-    public LocalDate getEndDate() {
-        return endDate;
+    public String getEndDate() {
+        return formatDate(endDate);
+    }
+
+    private String formatDate(LocalDate date) {
+        if (date == null) return "";
+        return String.format("%d-%02d-%04d",
+                date.getDayOfMonth(),
+                date.getMonthValue(),
+                date.getYear());
+    }
+
+    private long calculateDaysBetween(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null) {
+            return 0;
+        }
+        return ChronoUnit.DAYS.between(startDate, endDate) + 1;
     }
 
     public Map<String, Object> getReportData() {

@@ -10,6 +10,12 @@ import com.google.gson.reflect.TypeToken;
 import com.promonitor.controller.LimitManager;
 import com.promonitor.model.*;
 import com.promonitor.model.enums.LimitType;
+import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
+import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
+import javafx.geometry.Pos;
+import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
+import javafx.scene.paint.Color;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +63,20 @@ public class DataStorage {
 
     private String getFilePath(String fileName) {
         return dataDir + File.separator + fileName;
+    }
+
+    public HBox applicationBox(String item){
+        HBox hbox = new HBox(10);
+        hbox.setAlignment(Pos.CENTER_LEFT);
+
+        FontAwesomeIconView appIcon = new FontAwesomeIconView(FontAwesomeIcon.WINDOW_MAXIMIZE);
+        appIcon.setGlyphSize(14);
+        appIcon.setFill(Color.valueOf("#4a6bff"));
+
+        Label nameLabel = new Label(item);
+
+        hbox.getChildren().addAll(appIcon, nameLabel);
+        return hbox;
     }
 
     // -------------------- Application Groups --------------------
@@ -117,9 +137,7 @@ public class DataStorage {
                     Map<String, String> scheduleData = null;
                     if (limit.getType() == LimitType.SCHEDULE && limit.getSchedule() != null) {
                         scheduleData = new HashMap<>();
-                        // Add schedule serialization logic here if needed
                     }
-
                     return new LimitData(
                             limit.getType().name(),
                             limit.getValue().getSeconds(),
@@ -130,7 +148,6 @@ public class DataStorage {
                     );
                 })
                 .collect(Collectors.toList());
-
         writeJsonToFile(limitsData, LIMITS_FILE, "limits");
     }
 
@@ -155,7 +172,6 @@ public class DataStorage {
 
                 if (limitType == LimitType.SCHEDULE && limitData.scheduleData != null) {
                     Schedule schedule = new Schedule();
-                    // Add schedule deserialization logic here if needed
                     limit.setSchedule(schedule);
                 }
 
@@ -222,20 +238,7 @@ public class DataStorage {
                 new HashMap<>()
         );
     }
-
-    public List<AppUsageData> loadAppUsageData() {
-        Map<String, List<AppUsageData>> usageByDate = loadUsageDataMap();
-
-        return usageByDate.values().stream()
-                .flatMap(Collection::stream)
-                .peek(data -> {
-                    if (data.getUsageTimeMillis() <= 0) {
-                        data.calculateUsageTimeMillis();
-                    }
-                })
-                .collect(Collectors.toList());
-    }
-
+    
     public List<AppUsageData> getUsageDataInTimeRange(String startDate, String endDate) {
         try {
             Date start = DATE_FORMATTER.parse(startDate);
@@ -282,130 +285,6 @@ public class DataStorage {
         return Collections.emptyList();
     }
 
-    public List<AppUsageData> getCurrentWeekUsageData() {
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.DAY_OF_WEEK, cal.getFirstDayOfWeek());
-        String startDate = DATE_FORMATTER.format(cal.getTime());
-
-        cal.add(Calendar.DAY_OF_WEEK, 6);
-        String endDate = DATE_FORMATTER.format(cal.getTime());
-
-        return getUsageDataInTimeRange(startDate, endDate);
-    }
-
-    public void updateAppUsageForToday(Application app, String usageTime, String limitInfo) {
-        updateAppUsageForDate(app, usageTime, limitInfo, DATE_FORMATTER.format(new Date()));
-    }
-
-    public void updateAppUsageForDate(Application app, String usageTime, String limitInfo, String date) {
-        Map<String, List<AppUsageData>> usageByDate = loadUsageDataMap();
-
-        // Get or create the list for the date
-        List<AppUsageData> dateData = usageByDate.computeIfAbsent(date, k -> new ArrayList<>());
-
-        // Try to find and update existing app data
-        boolean found = false;
-        for (AppUsageData data : dateData) {
-            if (data.getName().equals(app.getName()) &&
-                    data.getExecutablePath().equals(app.getExecutablePath())) {
-                data.setUsageTime(usageTime);
-                data.setLimitInfo(limitInfo);
-                data.calculateUsageTimeMillis();
-                found = true;
-                break;
-            }
-        }
-
-        // Add new entry if not found
-        if (!found) {
-            AppUsageData newData = new AppUsageData(
-                    app.getName(), app.getProcessId(), app.getExecutablePath(),
-                    usageTime, limitInfo, date
-            );
-            dateData.add(newData);
-        }
-
-        writeJsonToFile(usageByDate, APP_USAGE_FILE, "app usage data");
-    }
-
-    public void updateAppUsageAcrossDays(Application app, Date startTime, Date endTime, String limitInfo) {
-        if (startTime.after(endTime)) {
-            logger.error("Start time is after end time: {} > {}", startTime, endTime);
-            return;
-        }
-
-        // Calculate usage for each day in the range
-        Map<String, Long> dailyUsageMillis = calculateDailyUsage(startTime, endTime);
-
-        // Update each day's data
-        dailyUsageMillis.forEach((dateStr, usageMillis) -> {
-            String usageTime = formatMillisToTime(usageMillis);
-            updateAppUsageForDate(app, usageTime, limitInfo, dateStr);
-        });
-    }
-
-    private Map<String, Long> calculateDailyUsage(Date startTime, Date endTime) {
-        Map<String, Long> dailyUsageMillis = new HashMap<>();
-        String startDateStr = DATE_FORMATTER.format(startTime);
-        String endDateStr = DATE_FORMATTER.format(endTime);
-
-        // If same day, simple calculation
-        if (startDateStr.equals(endDateStr)) {
-            dailyUsageMillis.put(startDateStr, endTime.getTime() - startTime.getTime());
-            return dailyUsageMillis;
-        }
-
-        Calendar currentDay = Calendar.getInstance();
-        currentDay.setTime(startTime);
-
-        Calendar endOfDay = Calendar.getInstance();
-        endOfDay.setTime(startTime);
-        endOfDay.set(Calendar.HOUR_OF_DAY, 23);
-        endOfDay.set(Calendar.MINUTE, 59);
-        endOfDay.set(Calendar.SECOND, 59);
-        endOfDay.set(Calendar.MILLISECOND, 999);
-
-        while (currentDay.getTime().before(endTime)) {
-            String currentDateStr = DATE_FORMATTER.format(currentDay.getTime());
-            long usageInDay;
-
-            if (endOfDay.getTime().before(endTime)) {
-                // Full day usage
-                usageInDay = endOfDay.getTimeInMillis() - currentDay.getTimeInMillis() + 1;
-            } else {
-                // Partial day (last day)
-                usageInDay = endTime.getTime() - currentDay.getTimeInMillis();
-            }
-
-            dailyUsageMillis.put(currentDateStr, usageInDay);
-
-            // Move to next day
-            currentDay.add(Calendar.DATE, 1);
-            currentDay.set(Calendar.HOUR_OF_DAY, 0);
-            currentDay.set(Calendar.MINUTE, 0);
-            currentDay.set(Calendar.SECOND, 0);
-            currentDay.set(Calendar.MILLISECOND, 0);
-
-            endOfDay.setTime(currentDay.getTime());
-            endOfDay.set(Calendar.HOUR_OF_DAY, 23);
-            endOfDay.set(Calendar.MINUTE, 59);
-            endOfDay.set(Calendar.SECOND, 59);
-            endOfDay.set(Calendar.MILLISECOND, 999);
-        }
-
-        return dailyUsageMillis;
-    }
-
-    private String formatMillisToTime(long millis) {
-        long seconds = millis / 1000;
-        long hours = seconds / 3600;
-        seconds %= 3600;
-        long minutes = seconds / 60;
-        seconds %= 60;
-
-        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
-    }
-
     // -------------------- Generic JSON I/O --------------------
 
     private <T> T readJsonFromFile(Type type, String fileName, String description, T defaultValue) {
@@ -450,11 +329,11 @@ public class DataStorage {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class AppUsageData implements Serializable {
         private String name;
-        private int processId;
-        private String executablePath;
-        private String usageTime;
-        private String limitInfo;
-        private String date;
+        private final int processId;
+        private final String executablePath;
+        private final String usageTime;
+        private final String limitInfo;
+        private final String date;
         private transient Application application;
         private long usageTimeMillis;
 
@@ -498,25 +377,19 @@ public class DataStorage {
         public void setName(String name) { this.name = name; }
 
         public int getProcessId() { return processId; }
-        public void setProcessId(int processId) { this.processId = processId; }
 
         public String getExecutablePath() { return executablePath; }
-        public void setExecutablePath(String executablePath) { this.executablePath = executablePath; }
 
         public String getUsageTime() { return usageTime; }
-        public void setUsageTime(String usageTime) { this.usageTime = usageTime; }
 
         public String getLimitInfo() { return limitInfo; }
-        public void setLimitInfo(String limitInfo) { this.limitInfo = limitInfo; }
 
         public String getDate() { return date; }
-        public void setDate(String date) { this.date = date; }
 
         public Application getApplication() { return application; }
         public void setApplication(Application application) { this.application = application; }
 
         public long getUsageTimeMillis() { return usageTimeMillis; }
-        public void setUsageTimeMillis(long usageTimeMillis) { this.usageTimeMillis = usageTimeMillis; }
 
         @Override
         public String toString() {

@@ -2,6 +2,7 @@ package com.promonitor.view;
 
 import com.promonitor.controller.MainController;
 import com.promonitor.model.Application;
+import com.promonitor.model.ApplicationGroup;
 import com.promonitor.model.Limit;
 import com.promonitor.model.enums.LimitType;
 import javafx.collections.FXCollections;
@@ -20,34 +21,29 @@ import java.time.Duration;
 import java.util.Objects;
 
 public class LimitEditDialog extends Dialog<Limit> {
-    private final Application target;
+    private final Object target;
 
     private final ComboBox<LimitType> limitTypeCombo;
     private final TextField hoursField;
     private final TextField minutesField;
 
     public LimitEditDialog(LimitsView.LimitInfo limitInfo, MainController controller) {
-        this.target = (Application) limitInfo.getTarget();
+        this.target = limitInfo.getTarget();
         Limit originalLimit = controller.getLimitManager().getLimit(target);
 
         setTitle("Chỉnh sửa giới hạn");
 
-        // Thiết lập giao diện dialog
         DialogPane dialogPane = getDialogPane();
-        dialogPane.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/limit-dialog.css")).toExternalForm());
-        dialogPane.getStyleClass().add("limit-edit-dialog");
+        dialogPane.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/dialog.css")).toExternalForm());
 
-        // Thiết lập kích thước
         Stage stage = (Stage) dialogPane.getScene().getWindow();
         stage.setMinWidth(450);
         stage.setMinHeight(380);
 
-        // Main layout
         VBox mainLayout = new VBox(20);
         mainLayout.setPadding(new Insets(25));
-        mainLayout.getStyleClass().add("limit-form");
+        mainLayout.getStyleClass().add("form");
 
-        // Header
         HBox headerBox = new HBox(10);
         headerBox.setAlignment(Pos.CENTER_LEFT);
 
@@ -65,21 +61,17 @@ public class LimitEditDialog extends Dialog<Limit> {
         headerTextBox.getChildren().addAll(headerTitle, targetText);
         headerBox.getChildren().add(headerTextBox);
 
-        // Thêm header vào layout chính
         mainLayout.getChildren().add(headerBox);
 
-        // Separator có style
         Separator separator = new Separator();
         separator.getStyleClass().add("modern-separator");
         mainLayout.getChildren().add(separator);
 
-        // Form container
         GridPane grid = new GridPane();
         grid.setHgap(15);
         grid.setVgap(20);
         grid.getStyleClass().add("form-grid");
 
-        // Set column constraints
         ColumnConstraints column1 = new ColumnConstraints();
         column1.setPercentWidth(30);
 
@@ -178,7 +170,7 @@ public class LimitEditDialog extends Dialog<Limit> {
         grid.add(hoursField, 1, row++);
 
         grid.add(minutesLabel, 0, row);
-        grid.add(minutesField, 1, row++);
+        grid.add(minutesField, 1, row);
 
         mainLayout.getChildren().add(grid);
 

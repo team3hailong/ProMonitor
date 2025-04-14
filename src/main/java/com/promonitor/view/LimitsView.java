@@ -5,6 +5,7 @@ import com.promonitor.model.*;
 import com.promonitor.model.enums.LimitType;
 
 import com.promonitor.util.AlertHelper;
+import com.promonitor.util.DataStorage;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 
@@ -14,10 +15,8 @@ import javafx.geometry.Pos;
 import javafx.geometry.VPos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
 import javafx.util.Callback;
 
 import java.time.Duration;
@@ -27,9 +26,11 @@ public class LimitsView {
     private final MainController controller;
     private BorderPane content;
     private TableView<LimitInfo> limitsTable;
+    private final DataStorage dataStorage;
 
     public LimitsView(MainController controller) {
         this.controller = controller;
+        this.dataStorage = controller.getDataStorage();
         createContent();
     }
 
@@ -189,15 +190,7 @@ public class LimitsView {
                     setGraphic(null);
                     setText(null);
                 } else {
-                    HBox hBox = new HBox(10);
-                    hBox.setAlignment(Pos.CENTER_LEFT);
-
-                    FontAwesomeIconView icon = new FontAwesomeIconView(FontAwesomeIcon.WINDOW_MAXIMIZE);
-                    icon.setGlyphSize(14);
-                    icon.setFill(Color.valueOf("#4a6bff"));
-
-                    Label label = new Label(item);
-                    hBox.getChildren().addAll(icon, label);
+                    HBox hBox = dataStorage.applicationBox(item);
 
                     setGraphic(hBox);
                     setText(null);
@@ -333,7 +326,7 @@ public class LimitsView {
                 targetName = group.getName();
                 targetType = "Nhóm";
             } else {
-                continue; // Bỏ qua các loại không hỗ trợ
+                continue;
             }
 
             String limitType = limit.getType().getDisplayName();
@@ -353,7 +346,6 @@ public class LimitsView {
 
         limitsTable.setItems(FXCollections.observableArrayList(limitInfos));
 
-        // Update stats
         updateStats();
     }
 
@@ -369,7 +361,6 @@ public class LimitsView {
             }
         }
 
-        // Update counters
         Label appCountLabel = (Label) content.lookup("#countAppLimits");
         if (appCountLabel != null) {
             appCountLabel.setText(String.valueOf(appLimits));
@@ -407,7 +398,6 @@ public class LimitsView {
             } else if (target instanceof ApplicationGroup) {
                 controller.getLimitManager().removeLimit((ApplicationGroup) target);
             }
-
             loadLimits();
             showNotification();
         }

@@ -34,8 +34,7 @@ public class LimitCreationDialog extends Dialog<Limit> {
         this.controller = controller;
         setTitle("Tạo giới hạn mới");
         DialogPane dialogPane = getDialogPane();
-        dialogPane.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/limit-dialog.css")).toExternalForm());
-        dialogPane.getStyleClass().add("limit-creation-dialog");
+        dialogPane.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/dialog.css")).toExternalForm());
 
         Stage stage = (Stage) dialogPane.getScene().getWindow();
         stage.setMinWidth(450);
@@ -59,7 +58,7 @@ public class LimitCreationDialog extends Dialog<Limit> {
         grid.setHgap(15);
         grid.setVgap(15);
         grid.setPadding(new Insets(25));
-        grid.getStyleClass().add("limit-form");
+        grid.getStyleClass().add("form");
 
         ColumnConstraints column1 = new ColumnConstraints();
         column1.setPercentWidth(40);
@@ -98,7 +97,6 @@ public class LimitCreationDialog extends Dialog<Limit> {
 
         Label timeLabel = new Label("Giới hạn thời gian:");
 
-        // Time input fields in HBox for better layout
         HBox timeInputBox = new HBox(10);
         timeInputBox.getStyleClass().add("time-input-box");
 
@@ -120,7 +118,6 @@ public class LimitCreationDialog extends Dialog<Limit> {
 
         timeInputBox.getChildren().addAll(hoursField, hoursLabel, minutesField, minutesLabel);
 
-        // Add form elements to grid
         int row = 0;
         grid.add(headerText, 0, row++, 2, 1);
         grid.add(new Separator(), 0, row++, 2, 1);
@@ -131,7 +128,7 @@ public class LimitCreationDialog extends Dialog<Limit> {
         grid.add(limitTypeLabel, 0, row);
         grid.add(limitTypeCombo, 1, row++);
         grid.add(timeLabel, 0, row);
-        grid.add(timeInputBox, 1, row++);
+        grid.add(timeInputBox, 1, row);
 
         hoursField.textProperty().addListener((observable, oldValue, newValue) -> {
             if (!newValue.matches("\\d*")) {
@@ -174,6 +171,12 @@ public class LimitCreationDialog extends Dialog<Limit> {
             }
             return null;
         });
+    }
+
+    public LimitCreationDialog(MainController controller, boolean isGroup, Object preselectedTarget) {
+        this(controller, isGroup);
+        // Đặt đối tượng được chọn cho combo
+        targetCombo.setValue(preselectedTarget);
     }
 
     private void updateTargetCombo(String targetType) {

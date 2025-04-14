@@ -4,6 +4,7 @@ import com.promonitor.controller.MainController;
 import com.promonitor.model.Application;
 import com.promonitor.model.ApplicationGroup;
 
+import com.promonitor.model.Limit;
 import com.promonitor.util.AlertHelper;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
@@ -18,6 +19,7 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.util.StringConverter;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -77,7 +79,7 @@ public class GroupsView {
         VBox rightPane = createRightPane();
 
         splitPane.getItems().addAll(leftPane, rightPane);
-        splitPane.setDividerPositions(0.32);
+        splitPane.setDividerPositions(0.3);
         SplitPane.setResizableWithParent(leftPane, false);
 
         content.setCenter(splitPane);
@@ -301,7 +303,6 @@ public class GroupsView {
 
         groupAppsListView.setPlaceholder(emptyPlaceholder);
 
-        // Set group limit button
         Button setLimitBtn = new Button("Đặt giới hạn cho nhóm");
         setLimitBtn.getStyleClass().add("accent-button");
 
@@ -315,7 +316,6 @@ public class GroupsView {
         setLimitBtn.disableProperty().bind(
                 groupsListView.getSelectionModel().selectedItemProperty().isNull());
 
-        // Empty right pane placeholder
         VBox emptyRightPane = new VBox();
         emptyRightPane.setAlignment(Pos.CENTER);
         emptyRightPane.setPadding(new Insets(50, 0, 0, 0));
@@ -333,7 +333,6 @@ public class GroupsView {
 
         emptyRightPane.getChildren().addAll(bigEmptyIcon, selectGroupLabel, instructionLabel);
 
-        // Add all components to right pane
         VBox groupContentPane = new VBox(15);
         groupContentPane.getChildren().addAll(
                 groupTitleBox,
@@ -349,14 +348,12 @@ public class GroupsView {
         VBox.setVgrow(groupAppsListView, Priority.ALWAYS);
         pane.getChildren().add(rightStackPane);
 
-        // Show/hide right pane content based on selection
         groupsListView.getSelectionModel().selectedItemProperty().addListener((obs, old, newVal) -> {
             boolean hasSelection = newVal != null;
             groupContentPane.setVisible(hasSelection);
             emptyRightPane.setVisible(!hasSelection);
         });
 
-        // Initialize with empty state
         groupContentPane.setVisible(false);
         emptyRightPane.setVisible(true);
 
@@ -392,47 +389,66 @@ public class GroupsView {
     }
 
     private void updateAppComboBox() {
-        if (selectedGroup == null) {
+        ApplicationGroup group = groupsListView.getSelectionModel().getSelectedItem();
+        if (group == null) {
             appComboBox.setItems(FXCollections.observableArrayList());
             return;
         }
-
+        
         ObservableList<Application> allApps = controller.getApplications();
-
         ObservableList<Application> availableApps = allApps.filtered(
-                app -> !selectedGroup.getApplications().contains(app)
+            app -> !group.getApplications().contains(app)
         );
-
         appComboBox.setItems(availableApps);
     }
 
     private void createNewGroup() {
         Dialog<String> dialog = new Dialog<>();
         dialog.setTitle("Tạo nhóm mới");
-        dialog.setHeaderText("Nhập tên cho nhóm mới");
+        dialog.getDialogPane().getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/dialog.css")).toExternalForm());
+
+        dialog.getDialogPane().setStyle("-fx-background-color: white;");
+
+        Label headerText = new Label("Tạo nhóm mới");
+        headerText.getStyleClass().add("dialog-header");
+        headerText.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+
+        Separator separator = new Separator();
+        separator.getStyleClass().add("modern-separator");
+
+        VBox headerContainer = new VBox(5, headerText, separator);
+        headerContainer.setPadding(new Insets(10, 10, 5, 10));
+        headerContainer.setAlignment(Pos.CENTER_LEFT);
+        dialog.getDialogPane().setHeader(headerContainer);
 
         ButtonType createButtonType = new ButtonType("Tạo", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(createButtonType, ButtonType.CANCEL);
+        ButtonType cancelButtonType = new ButtonType("Hủy", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(createButtonType, cancelButtonType);
 
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20, 150, 10, 10));
+        Label nameLabel = new Label("Tên nhóm:");
+        nameLabel.getStyleClass().add("title-label");
 
         TextField nameField = new TextField();
-        nameField.setPromptText("Tên nhóm");
+        nameField.setPromptText("Nhập tên nhóm mới");
+        nameField.setPrefWidth(300);
+        nameField.setPrefHeight(25);
+        nameField.getStyleClass().add("time-field");
 
-        grid.add(new Label("Tên nhóm:"), 0, 0);
-        grid.add(nameField, 1, 0);
+        VBox formContent = new VBox(10);
+        formContent.getChildren().addAll(nameLabel, nameField);
+        formContent.setPadding(new Insets(20, 20, 20, 20));
 
-        dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().setContent(formContent);
 
         Node createButton = dialog.getDialogPane().lookupButton(createButtonType);
+        createButton.getStyleClass().add("create-button");
         createButton.setDisable(true);
 
-        nameField.textProperty().addListener((observable, oldValue, newValue) -> createButton.setDisable(newValue.trim().isEmpty()));
+        Node cancelButton = dialog.getDialogPane().lookupButton(cancelButtonType);
+        cancelButton.getStyleClass().add("cancel-button");
 
-        dialog.getDialogPane().getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/style.css")).toExternalForm());
+        nameField.textProperty().addListener((observable, oldValue, newValue) ->
+                createButton.setDisable(newValue.trim().isEmpty()));
 
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == createButtonType) {
@@ -441,13 +457,16 @@ public class GroupsView {
             return null;
         });
 
+        dialog.getDialogPane().setPrefWidth(400);
+        dialog.getDialogPane().setPrefHeight(200);
+
         Optional<String> result = dialog.showAndWait();
         result.ifPresent(name -> {
             if (!name.trim().isEmpty()) {
                 ApplicationGroup newGroup = controller.createGroup(name.trim());
                 updateGroupList();
                 groupsListView.getSelectionModel().select(newGroup);
-                updateStatsLabels();
+                showNotification("Đã thêm nhóm " + newGroup.getName(), AlertHelper.ToastType.SUCCESS);
             }
         });
     }
@@ -467,8 +486,9 @@ public class GroupsView {
 
         if (AlertHelper.createConfirmationContent(headerLabel, messageLabel)) {
             controller.deleteGroup(selectedGroup);
+            limitsView.loadLimits();
             updateGroupList();
-            updateStatsLabels();
+            showNotification("Đã xóa nhóm " + selectedGroup.getName(), AlertHelper.ToastType.INFO);
         }
     }
 
@@ -479,8 +499,9 @@ public class GroupsView {
         if (selectedApp != null) {
             controller.updateGroup(selectedGroup, selectedApp, true);
             updateAppComboBox();
-
-            showNotification("Đã thêm " + selectedApp.getName() + " vào nhóm " + selectedGroup.getName(), "success");
+            updateGroupList();
+            groupsListView.refresh();
+            showNotification("Đã thêm " + selectedApp.getName() + " vào nhóm " + selectedGroup.getName(), AlertHelper.ToastType.SUCCESS);
         }
     }
 
@@ -489,67 +510,47 @@ public class GroupsView {
 
         controller.updateGroup(selectedGroup, app, false);
         updateAppComboBox();
-
-        showNotification("Đã xóa " + app.getName() + " khỏi nhóm " + selectedGroup.getName(), "info");
+        updateGroupList();
+        groupsListView.refresh();
+        showNotification("Đã xóa " + app.getName() + " khỏi nhóm " + selectedGroup.getName(), AlertHelper.ToastType.INFO);
     }
 
     private void setGroupLimit() {
         if (selectedGroup == null) return;
-        LimitCreationDialog dialog = new LimitCreationDialog(controller, true);
-        dialog.showAndWait();
+        Limit existingLimit = controller.getLimit(selectedGroup);
+
+        if (existingLimit != null) {
+            LimitsView.LimitInfo limitInfo = new LimitsView.LimitInfo(
+                    selectedGroup,                                     // target object
+                    selectedGroup.getName(),                           // target name
+                    "Nhóm",                                            // target type
+                    existingLimit.getType().getDisplayName(),          // limit type
+                    formatDuration(existingLimit.getValue())           // limit value
+            );
+
+            LimitEditDialog dialog = new LimitEditDialog(limitInfo, controller);
+            dialog.showAndWait();
+        } else {
+            // Sử dụng constructor mới để preselect nhóm hiện hành
+            LimitCreationDialog dialog = new LimitCreationDialog(controller, true, selectedGroup);
+            dialog.showAndWait();
+        }
+
         limitsView.loadLimits();
+    }
+
+    private String formatDuration(Duration duration) {
+        long hours = duration.toHours();
+        int minutes = duration.toMinutesPart();
+        return String.format("%d giờ %d phút", hours, minutes);
     }
 
     private void updateGroupList() {
         groupsListView.setItems(controller.getGroups());
-        updateStatsLabels();
     }
 
-    private void updateStatsLabels() {
-        Label totalGroupsLabel = (Label) content.lookup("#totalGroupsLabel");
-        if (totalGroupsLabel != null) {
-            totalGroupsLabel.setText("Tổng số nhóm: " + controller.getGroups().size());
-        }
-
-        int totalApps = 0;
-        for (ApplicationGroup group : controller.getGroups()) {
-            totalApps += group.getApplicationCount();
-        }
-
-        Label totalAppsLabel = (Label) content.lookup("#totalAppsLabel");
-        if (totalAppsLabel != null) {
-            totalAppsLabel.setText("Tổng số ứng dụng trong nhóm: " + totalApps);
-        }
-    }
-
-    private void showNotification(String message, String type) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setHeaderText(null);
-        alert.setTitle("Thông báo");
-
-        FontAwesomeIcon icon;
-        Color iconColor;
-
-        if (type.equals("success")) {
-            icon = FontAwesomeIcon.CHECK_CIRCLE;
-            iconColor = Color.valueOf("#2ecc71");
-        } else {
-            icon = FontAwesomeIcon.INFO_CIRCLE;
-            iconColor = Color.valueOf("#3498db");
-        }
-
-        FontAwesomeIconView iconView = new FontAwesomeIconView(icon);
-        iconView.setGlyphSize(24);
-        iconView.setFill(iconColor);
-
-        HBox content = new HBox(15, iconView, new Label(message));
-        content.setAlignment(Pos.CENTER_LEFT);
-        content.setPadding(new Insets(10));
-
-        alert.getDialogPane().setContent(content);
-        alert.getDialogPane().getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/style.css")).toExternalForm());
-
-        alert.show();
+    private void showNotification(String message, AlertHelper.ToastType type) {
+        AlertHelper.showToast(this.getContent(), message, type);
     }
 
     public Node getContent() {

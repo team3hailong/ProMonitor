@@ -1,5 +1,6 @@
 # ProMonitor
-ProMonitor là một công cụ giám sát ứng dụng thông minh được thiết kế để giúp người dùng theo dõi và quản lý thời gian sử dụng máy tính của họ. Phần mềm cho phép bạn theo dõi các ứng dụng đang hoạt động, thiết lập giới hạn thời gian cho từng ứng dụng hoặc nhóm ứng dụng, và nhận thông báo khi vượt quá giới hạn thời gian.
+
+ProMonitor là công cụ giám sát ứng dụng thông minh giúp người dùng theo dõi và quản lý thời gian sử dụng máy tính. Phiên bản cập nhật này bổ sung các tính năng nâng cao như cấu hình tùy chỉnh theo user mode, báo cáo sử dụng chi tiết và quản lý nhóm ứng dụng.
 
 ## Tác giả
 
@@ -7,35 +8,34 @@ ProMonitor là một công cụ giám sát ứng dụng thông minh được thi
 
 ## Demo
 
-[[ProJApp] ProMonitor](https://youtu.be/9e4TuZeYuXA)
+[[ProJApp] ProMonitor](https://www.youtube.com/watch?v=U4WawoSM-xM)
 
 ## Ảnh chụp màn hình
 
-![Quản lý ứng dụng](preview/Application.png)
-![Quản lý nhóm ứng dụng](preview/Group.png)
-![Quản lý giới hạn](preview/Limit.png)
-![Đặt giới hạn](preview/LimitCreation.png)
-![Báo cáo sử dụng](preview/Report.png)
-![Cài đặt ứng dụng](preview/Setting.png)
+![Quản lý ứng dụng](preview/Application.png)  
+![Quản lý nhóm ứng dụng](preview/Group.png)  
+![Quản lý giới hạn](preview/Limit.png)  
+![Đặt giới hạn](preview/LimitCreation.png)  
+![Báo cáo sử dụng](preview/Report.png)  
+![Cài đặt nâng cao](preview/Setting.png)
 
 ## Tính năng
 
-- **Giám sát ứng dụng thời gian thực:** Theo dõi ứng dụng nào đang hoạt động và thời gian sử dụng
-- **Giới hạn thời gian sử dụng:** Đặt giới hạn thời gian hàng ngày hoặc hàng tuần cho các ứng dụng cụ thể hoặc nhóm ứng dụng
-- **Nhiều loại thông báo:** Lựa chọn từ các tùy chọn thông báo khác nhau khi vượt quá giới hạn
-- **Giám sát chế độ nghiêm ngặt hoặc thoải mái:** Chọn giữa chế độ nghiêm ngặt (tự động đóng ứng dụng khi vượt quá giới hạn) hoặc chế độ thoải mái (chỉ thông báo)
-- **Báo cáo toàn diện:** Tạo báo cáo sử dụng chi tiết theo ngày, tuần, hoặc khoảng thời gian tùy chỉnh
-- **Tích hợp vào khay hệ thống:** Thu nhỏ ứng dụng vào khay hệ thống để giám sát kín đáo
-- **Khởi động tự động:** Tùy chọn để tự động bắt đầu giám sát khi ứng dụng khởi động
-- **Giao diện thân thiện với người dùng:** Giao diện trực quan và dễ sử dụng cho tất cả các chức năng
-- **Nhóm ứng dụng:** Tạo các nhóm ứng dụng tùy chỉnh để giám sát tập thể
+- **Giám sát ứng dụng theo thời gian thực:** Theo dõi ứng dụng đang hoạt động và tổng thời gian sử dụng.
+- **Giới hạn thời gian sử dụng:** Đặt giới hạn cá nhân cho từng ứng dụng và nhóm ứng dụng.
+- **Cấu hình theo User Mode:** Áp dụng cài đặt riêng biệt cho từng chế độ (Default, Work, Children) với các thông số như cảnh báo, giới hạn thời gian và chế độ giám sát (NORMAL/STRICT).
+- **Báo cáo sử dụng tùy chỉnh nâng cao:** Tạo báo cáo dựa trên ngày, tuần, tháng và khoảng thời gian cụ thể.
+- **Quản lý nhóm ứng dụng:** Tạo, chỉnh sửa và xóa nhóm ứng dụng để theo dõi tập thể.
+- **Tích hợp tray system và tự động khởi động:** Hỗ trợ ẩn về tray hệ thống và tự động khởi động khi cài đặt.
+- **Thông báo đa dạng:** Hỗ trợ nhiều loại thông báo (Popup, Audio,...) khi vượt quá giới hạn do cài đặt.
+- **Lưu và đồng bộ cấu hình:** Dữ liệu cấu hình được lưu tự động theo định kỳ và áp dụng cho người dùng.
 
 ## Yêu cầu hệ thống
 
 - Java 11 trở lên
 - JavaFX 11 trở lên
 - Maven 3.6.3 trở lên
-- Hệ điều hành Windows (cho chức năng theo dõi ứng dụng)
+- Hệ điều hành Windows (với chức năng giám sát ứng dụng)
 - Tối thiểu 4GB RAM
 - 100MB dung lượng ổ đĩa trống
 
@@ -44,7 +44,7 @@ ProMonitor là một công cụ giám sát ứng dụng thông minh được thi
 ### Từ mã nguồn
 ```bash
 # Sao chép kho lưu trữ
-git clone https://github.com/YourUsername/ProMonitor.git
+git clone https://github.com/team3hailong/ProMonitor.git
 
 # Di chuyển đến thư mục dự án
 cd ProMonitor
@@ -59,7 +59,7 @@ java -jar target/ProMonitor.jar
 ### Từ bản phát hành
 ```bash
 # Tải xuống bản phát hành mới nhất từ
-https://github.com/YourUsername/ProMonitor/releases/latest
+https://github.com/team3hailong/ProMonitor/releases/latest
 
 # Chạy tệp JAR
 java -jar ProMonitor.jar
@@ -67,13 +67,13 @@ java -jar ProMonitor.jar
 
 ## Cách sử dụng
 
-1. Khởi chạy ứng dụng ProMonitor
-2. Cấu hình tùy chọn thông báo trong phần Cài đặt
-3. Tạo nhóm ứng dụng (tùy chọn)
-4. Đặt giới hạn thời gian cho các ứng dụng hoặc nhóm ứng dụng cụ thể
-5. Bắt đầu giám sát bằng cách nhấp vào nút "Bắt đầu giám sát"
-6. Xem thống kê thời gian thực về việc sử dụng ứng dụng của bạn
-7. Tạo báo cáo để phân tích các mẫu sử dụng máy tính của bạn
+1. Khởi chạy ứng dụng ProMonitor.
+2. Vào mục Cài đặt để cấu hình thông báo, giới hạn thời gian và thiết lập chế độ người dùng (User Mode).
+3. Tạo nhóm ứng dụng (nếu cần) và đặt các giới hạn thời gian cụ thể.
+4. Bắt đầu giám sát bằng cách nhấn nút "Bắt đầu giám sát".
+5. Quan sát thời gian sử dụng ứng dụng theo thời gian thực trên giao diện chính.
+6. Tạo báo cáo sử dụng để phân tích chi tiết theo ngày, tuần, tháng hoặc khoảng thời gian tùy chỉnh.
+7. Ứng dụng tự động lưu cấu hình và dữ liệu giám sát, đồng thời hỗ trợ ẩn về tray hệ thống khi đóng giao diện.
 
 ## Giấy phép
 

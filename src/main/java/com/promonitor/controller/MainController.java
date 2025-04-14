@@ -2,7 +2,9 @@ package com.promonitor.controller;
 
 import com.promonitor.model.*;
 import com.promonitor.model.enums.ReportType;
+import com.promonitor.model.enums.UserMode;
 import com.promonitor.service.ReportService;
+import com.promonitor.util.AlertHelper;
 import com.promonitor.util.DataStorage;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
@@ -10,7 +12,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +30,7 @@ public class MainController {
     private final User currentUser;
     private final Monitor monitor;
     private final LimitManager limitManager;
-    private Notifier notifier;
+    private final Notifier notifier;
     private DataStorage dataStorage;
     private final ReportService reportService;
 
@@ -121,6 +123,7 @@ public class MainController {
     public void deleteGroup(ApplicationGroup group) {
         if (groupList.remove(group)) {
             limitManager.removeLimit(group);
+
             markChanged();
             logger.info("Đã xóa nhóm: {}", group.getName());
         }
@@ -136,7 +139,6 @@ public class MainController {
         }
     }
 
-    // Report generation methods
     public Report createReport(ReportType reportType) {
         return reportService.createReport(reportType);
     }
@@ -161,7 +163,6 @@ public class MainController {
         pendingChanges.set(true);
     }
 
-    // Getters for UI components
     public ObservableList<Application> getApplications() {
         List<Application> currentApps = monitor.getAllTrackedApplications();
         applicationList.setAll(currentApps);
@@ -183,11 +184,15 @@ public class MainController {
     }
 
     public boolean confirmExit() {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Xác nhận thoát");
-        alert.setHeaderText("Bạn có chắc chắn muốn thoát?");
-        alert.setContentText("Tất cả dữ liệu chưa lưu sẽ bị mất.");
-        return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
+        Label headerLabel = new Label("Bạn có chắc chắn muốn thoát?");
+        headerLabel.getStyleClass().add("dialog-header");
+
+        Label messageLabel = new Label(
+                "Bạn đang cố gắng thoát khỏi ứng dụng hoặc chuyển sang trang khác.\nNếu bạn tiếp tục mà không lưu, tất cả những thay đổi sẽ bị mất vĩnh viễn."
+        );
+        messageLabel.getStyleClass().add("dialog-subtitle");
+        messageLabel.setWrapText(true);
+        return AlertHelper.createConfirmationContent(headerLabel, messageLabel);
     }
 
     public void shutdownApp() {
@@ -200,14 +205,27 @@ public class MainController {
 
     public boolean updateUserSettings(UserSettings settings) {
         UserSettings currentSettings = currentUser.getSettings();
-        currentSettings.setNotificationType(settings.getNotificationType());
-        currentSettings.setNotificationsEnabled(settings.isNotificationsEnabled());
-        currentSettings.setSoundAlertPath(settings.getSoundAlertPath());
-        currentSettings.setWarningThresholdMinutes(settings.getWarningThresholdMinutes());
+
+        currentSettings.saveModeSettings(currentSettings.getUserMode());
+
+        UserMode newMode = settings.getUserMode();
+
         currentSettings.setStartAtLogin(settings.isStartAtLogin());
         currentSettings.setMinimizeToTray(settings.isMinimizeToTray());
         currentSettings.setAutoStartMonitoring(settings.isAutoStartMonitoring());
-        currentSettings.setMonitorMode(settings.getMonitorMode());
+
+        boolean modeChanged = !currentSettings.getUserMode().equals(newMode);
+        currentSettings.setUserMode(newMode);
+        
+        if (modeChanged) {
+            currentSettings.applyModeSettings(newMode);
+        } else {
+            currentSettings.setNotificationType(settings.getNotificationType());
+            currentSettings.setNotificationsEnabled(settings.isNotificationsEnabled());
+            currentSettings.setSoundAlertPath(settings.getSoundAlertPath());
+            currentSettings.setWarningThresholdMinutes(settings.getWarningThresholdMinutes());
+            currentSettings.setMonitorMode(settings.getMonitorMode());
+        }
 
         boolean saved = currentUser.saveSettings();
         logger.info(saved ? "Đã cập nhật và lưu cài đặt người dùng" : "Không thể lưu cài đặt người dùng");
