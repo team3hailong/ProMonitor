@@ -12,12 +12,12 @@ ProMonitor là công cụ giám sát ứng dụng thông minh giúp người dù
 
 ## Ảnh chụp màn hình
 
-![Quản lý ứng dụng](preview/Application.png)  
-![Quản lý nhóm ứng dụng](preview/Group.png)  
-![Quản lý giới hạn](preview/Limit.png)  
-![Đặt giới hạn](preview/LimitCreation.png)  
-![Báo cáo sử dụng](preview/Report.png)  
-![Cài đặt nâng cao](preview/Setting.png)
+![Quản lý ứng dụng](preview/NewApplication.png)  
+![Quản lý nhóm ứng dụng](preview/NewGroup.png)  
+![Quản lý giới hạn](preview/NewLimit.png)  
+![Đặt giới hạn](preview/NewLimitCreation.png)  
+![Báo cáo sử dụng](preview/NewReport.png)  
+![Cài đặt nâng cao](preview/NewSetting.png)
 
 ## Tính năng
 
